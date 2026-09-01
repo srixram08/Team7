@@ -1,0 +1,109 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  --bg-void: #F4F6F4;
+  --bg-panel: #FFFFFF;
+  --bg-panel-2: #F8FAF8;
+  --green-primary: #2E5B28;
+  --green-secondary: #4E8B46;
+  --green-dim: #E8F3E7;
+  --green-glow: rgba(46, 91, 40, 0.15);
+  --amber-warning: #D97706;
+  --red-critical: #DC2626;
+  --text-primary: #162215;
+  --text-muted: #586B56;
+
+  --font-heading: 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+}
+
+.font-heading {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.font-sans {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  background-color: var(--bg-void);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}
+
+body {
+  min-height: 100vh;
+  background-color: var(--bg-void);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Ambient Soft Green Glow */
+body::before {
+  content: "";
+  position: absolute;
+  top: -150px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(78, 139, 70, 0.12) 0%, rgba(244, 246, 244, 0) 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-void);
+}
+::-webkit-scrollbar-thumb {
+  background: #D6E5D4;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--green-primary);
+}
+
+/* Glassmorphism / White Card Panel */
+.glass-panel {
+  background: #FFFFFF;
+  border: 1px solid #D6E5D4;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.glass-panel:hover {
+  border-color: #4E8B46;
+  box-shadow: 0 20px 40px rgba(46, 91, 40, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Rounded Pill Button */
+.btn-pill {
+  border-radius: 9999px !important;
+  font-weight: 700 !important;
+}
+
+/* Glow Text */
+.green-glow-text {
+  color: #2E5B28;
+}
