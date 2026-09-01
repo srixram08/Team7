@@ -24,46 +24,23 @@ interface EdgeNode {
   cpuUsage: number;
 }
 
-interface VerificationResult {
-  verified: boolean;
-  hash: string;
-  candidateId: string;
-  checkpointId: string;
-  blockNumber: number;
-  timestamp: string;
-  merkleRoot: string;
-  statusText: string;
-}
-
 const INITIAL_NODES: EdgeNode[] = [
-  { id: "node-us-east", name: "US-East-1 (Virginia)", location: "North America", status: "active", activeSessions: 4120, latencyMs: 12, cpuUsage: 34 },
-  { id: "node-us-west", name: "US-West-2 (Oregon)", location: "North America", status: "active", activeSessions: 2850, latencyMs: 18, cpuUsage: 29 },
-  { id: "node-eu-central", name: "EU-Central-1 (Frankfurt)", location: "Europe", status: "active", activeSessions: 5200, latencyMs: 22, cpuUsage: 45 },
-  { id: "node-ap-south", name: "AP-South-1 (Mumbai)", location: "Asia Pacific", status: "active", activeSessions: 3900, latencyMs: 16, cpuUsage: 38 },
-  { id: "node-ap-northeast", name: "AP-Northeast-1 (Tokyo)", location: "Asia Pacific", status: "active", activeSessions: 1980, latencyMs: 28, cpuUsage: 22 },
-  { id: "node-sa-east", name: "SA-East-1 (São Paulo)", location: "South America", status: "warning", activeSessions: 890, latencyMs: 84, cpuUsage: 78 },
+  { id: "node-us-east", name: "US-East (N. Virginia)", location: "Ashburn, VA", status: "active", activeSessions: 4120, latencyMs: 12, cpuUsage: 48 },
+  { id: "node-us-west", name: "US-West (Oregon)", location: "Boardman, OR", status: "active", activeSessions: 3890, latencyMs: 18, cpuUsage: 54 },
+  { id: "node-eu-west", name: "EU-Central (Frankfurt)", location: "Frankfurt, DE", status: "active", activeSessions: 5240, latencyMs: 15, cpuUsage: 62 },
+  { id: "node-ap-south", name: "AP-South (Mumbai)", location: "Mumbai, IN", status: "active", activeSessions: 3100, latencyMs: 24, cpuUsage: 71 },
+  { id: "node-ap-east", name: "AP-East (Tokyo)", location: "Tokyo, JP", status: "active", activeSessions: 2590, latencyMs: 21, cpuUsage: 44 },
+  { id: "node-backup", name: "Disaster Recovery Node (Global Standby)", location: "Zurich, CH", status: "standby", activeSessions: 0, latencyMs: 8, cpuUsage: 6 },
 ];
 
 export default function AdminPage() {
   const [nodes, setNodes] = useState<EdgeNode[]>(INITIAL_NODES);
-  const [searchHash, setSearchHash] = useState("0xa8f492c10b7e49d29f8c12a3456789abcdef");
-  const [verificationResult, setVerificationResult] = useState<VerificationResult | null>({
-    verified: true,
-    hash: "0xa8f492c10b7e49d29f8c12a3456789abcdef",
-    candidateId: "STU-84920 (Alex Chen)",
-    checkpointId: "CHK-1042-89B",
-    blockNumber: 140289,
-    timestamp: "2026-07-28 20:44:09 UTC",
-    merkleRoot: "0x892a01f92e817c34b1049281a8b9e0f",
-    statusText: "TAMPER-PROOF VALIDATED (SHA-256 Chain Unbroken)"
-  });
-
-  // Config State
+  const [searchHash, setSearchHash] = useState("");
+  const [verificationResult, setVerificationResult] = useState<any>(null);
   const [telemetryFreq, setTelemetryFreq] = useState("100Hz");
   const [mlSensitivity, setMlSensitivity] = useState("Balanced (0.75)");
   const [snapshotInterval, setSnapshotInterval] = useState("2.0 Seconds");
   const [encryptionAlgo, setEncryptionAlgo] = useState("SHA-256 + Kyber-1024 Quantum-Safe");
-
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const triggerToast = (msg: string) => {
@@ -71,29 +48,34 @@ export default function AdminPage() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleVerifyHash = () => {
-    if (!searchHash.trim()) return;
-    setVerificationResult({
-      verified: true,
-      hash: searchHash.trim(),
-      candidateId: "STU-" + Math.floor(10000 + Math.random() * 90000),
-      checkpointId: "CHK-1042-" + Math.floor(10 + Math.random() * 90) + "X",
-      blockNumber: 140000 + Math.floor(Math.random() * 500),
-      timestamp: new Date().toISOString().replace("T", " ").substring(0, 19) + " UTC",
-      merkleRoot: "0x" + Math.random().toString(16).substring(2, 18),
-      statusText: "CRYPTOGRAPHIC PROOF VERIFIED (Zero Tampering Detected)"
-    });
-    triggerToast("Hash verification completed: 100% Chain Integrity");
+  const handleTriggerFailover = (nodeId: string) => {
+    setNodes((prev: EdgeNode[]) =>
+      prev.map((n: EdgeNode) => {
+        if (n.id === nodeId) {
+          const newStatus = n.status === "active" ? "warning" : "active";
+          return { ...n, status: newStatus, cpuUsage: newStatus === "warning" ? 96 : 48 };
+        }
+        return n;
+      })
+    );
+    triggerToast(`Automated failover protocol initiated for node: ${nodeId}`);
   };
 
-  const handleTriggerFailover = (nodeId: string) => {
-    setNodes(prev => prev.map(n => {
-      if (n.id === nodeId) {
-        return { ...n, status: n.status === "warning" ? "active" : "warning", cpuUsage: n.status === "warning" ? 35 : 85 };
-      }
-      return n;
-    }));
-    triggerToast(`Edge failover simulation executed for node: ${nodeId}`);
+  const handleVerifyHash = () => {
+    if (!searchHash.trim()) {
+      triggerToast("Please enter a valid SHA-256 hash");
+      return;
+    }
+
+    setVerificationResult({
+      statusText: "CRYPTOGRAPHIC PROOF VERIFIED (0 TAMPER DETECTED)",
+      blockNumber: 140289,
+      timestamp: new Date().toISOString(),
+      candidateId: "STU-84921",
+      checkpointId: "CHK-1042-89B",
+      merkleRoot: "0x4f8a91b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0",
+      keystrokesCount: 148,
+    });
   };
 
   return (
@@ -101,42 +83,36 @@ export default function AdminPage() {
       {/* Header */}
       <header className="border-b border-[#0A3D24] bg-[#0B120E] px-4 py-3 sm:px-6">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/"
-              className="flex items-center gap-2 font-mono text-xs text-[#7FA98F] hover:text-[#00FF7F] transition-colors"
-            >
+          <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-2 font-mono text-xs text-[#7FA98F] hover:text-[#00FF7F] transition-colors">
               <ArrowLeft className="h-4 w-4" />
-              <span>Back to Overview</span>
+              <span>EXIT TO PORTAL</span>
             </Link>
             <div className="h-4 w-px bg-[#0A3D24]" />
             <div className="flex items-center gap-2">
-              <Server className="h-5 w-5 text-[#00FF7F]" />
-              <span className="font-heading font-bold text-sm text-[#E8FCEF]">
-                ADMINISTRATIVE SYSTEM COMMAND CENTER
+              <Server className="h-4 w-4 text-[#00FF7F]" />
+              <span className="font-heading text-sm font-bold text-[#E8FCEF]">
+                ADMINISTRATIVE ARCHITECTURE CONSOLE
               </span>
             </div>
           </div>
-
-          <div className="flex items-center gap-4 font-mono text-xs text-[#7FA98F]">
-            <span className="flex items-center gap-1.5 text-[#00FF7F]">
-              <span className="h-2 w-2 rounded-full bg-[#00FF7F] pulse-dot" />
-              6 NODES ONLINE
-            </span>
+          <div className="flex items-center gap-2">
+            <span className="flex h-2 w-2 rounded-full bg-[#00FF7F] animate-pulse" />
+            <span className="font-mono text-xs text-[#00FF7F]">FAILOVER MESH ARMED</span>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="flex-1 mx-auto max-w-7xl w-full p-4 sm:p-6 space-y-6">
-        {/* Toast Alert */}
-        {toastMessage && (
-          <div className="rounded-lg border border-[#00FF7F] bg-[#0B120E] p-3 text-center font-mono text-xs text-[#00FF7F] shadow-[0_0_20px_rgba(0,255,127,0.3)] animate-pulse">
-            {toastMessage}
-          </div>
-        )}
+      {/* Toast Banner */}
+      {toastMessage && (
+        <div className="bg-[#00FF7F] text-[#05070A] px-4 py-2 text-center font-mono text-xs font-bold transition-all">
+          {toastMessage}
+        </div>
+      )}
 
-        {/* Section 1: Global Edge Topology Grid */}
+      {/* Main Container */}
+      <div className="mx-auto max-w-7xl flex-1 px-4 py-6 sm:px-6 space-y-8">
+        {/* Section 1: Edge Node Topology Grid */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 font-heading font-bold text-base text-[#E8FCEF]">
@@ -149,45 +125,47 @@ export default function AdminPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {nodes.map((node) => (
-              <GlassCard key={node.id} className="p-4 space-y-3 border-[#0A3D24]">
-                <div className="flex items-center justify-between font-mono text-xs">
-                  <span className="font-bold text-[#E8FCEF]">{node.name}</span>
-                  <span
-                    className={`px-2 py-0.5 rounded text-[10px] uppercase font-mono ${
-                      node.status === "active"
-                        ? "bg-[#0A3D24] text-[#00FF7F]"
-                        : "bg-[#FFB020]/20 text-[#FFB020] border border-[#FFB020]/40"
-                    }`}
-                  >
-                    {node.status}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2 font-mono text-[11px] bg-[#05070A] p-2.5 rounded border border-[#0A3D24]">
-                  <div>
-                    <div className="text-[#7FA98F] text-[9px] uppercase">Latency</div>
-                    <div className="text-[#00FF7F] font-bold">{node.latencyMs} ms</div>
+            {nodes.map((node: EdgeNode) => (
+              <div key={node.id}>
+                <GlassCard className="p-4 space-y-3 border-[#0A3D24]">
+                  <div className="flex items-center justify-between font-mono text-xs">
+                    <span className="font-bold text-[#E8FCEF]">{node.name}</span>
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] uppercase font-mono ${
+                        node.status === "active"
+                          ? "bg-[#0A3D24] text-[#00FF7F]"
+                          : "bg-[#FFB020]/20 text-[#FFB020] border border-[#FFB020]/40"
+                      }`}
+                    >
+                      {node.status}
+                    </span>
                   </div>
-                  <div>
-                    <div className="text-[#7FA98F] text-[9px] uppercase">CPU Load</div>
-                    <div className={node.cpuUsage > 70 ? "text-[#FFB020]" : "text-[#00FF7F]"}>
-                      {node.cpuUsage}%
+
+                  <div className="grid grid-cols-3 gap-2 font-mono text-[11px] bg-[#05070A] p-2.5 rounded border border-[#0A3D24]">
+                    <div>
+                      <div className="text-[#7FA98F] text-[9px] uppercase">Latency</div>
+                      <div className="text-[#00FF7F] font-bold">{node.latencyMs} ms</div>
+                    </div>
+                    <div>
+                      <div className="text-[#7FA98F] text-[9px] uppercase">CPU Load</div>
+                      <div className={node.cpuUsage > 70 ? "text-[#FFB020]" : "text-[#00FF7F]"}>
+                        {node.cpuUsage}%
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[#7FA98F] text-[9px] uppercase">Sessions</div>
+                      <div className="text-[#E8FCEF] font-bold">{node.activeSessions}</div>
                     </div>
                   </div>
-                  <div>
-                    <div className="text-[#7FA98F] text-[9px] uppercase">Sessions</div>
-                    <div className="text-[#E8FCEF] font-bold">{node.activeSessions}</div>
-                  </div>
-                </div>
 
-                <button
-                  onClick={() => handleTriggerFailover(node.id)}
-                  className="w-full py-1.5 rounded border border-[#0A3D24] bg-[#0B120E] font-mono text-[11px] text-[#7FA98F] hover:text-[#00FF7F] hover:border-[#00FF7F]/40 transition-colors cursor-pointer"
-                >
-                  Simulate Node Stress / Failover
-                </button>
-              </GlassCard>
+                  <button
+                    onClick={() => handleTriggerFailover(node.id)}
+                    className="w-full py-1.5 rounded border border-[#0A3D24] bg-[#0B120E] font-mono text-[11px] text-[#7FA98F] hover:text-[#00FF7F] hover:border-[#00FF7F]/40 transition-colors cursor-pointer"
+                  >
+                    Simulate Node Stress / Failover
+                  </button>
+                </GlassCard>
+              </div>
             ))}
           </div>
         </div>
@@ -205,14 +183,14 @@ export default function AdminPage() {
               </div>
 
               <p className="font-sans text-xs text-[#7FA98F] leading-relaxed">
-                Paste any AROEP candidate checkpoint hash to verify cryptographic chain integrity, zero tamper status, and immutable block timestamp.
+                Paste any ReviveX candidate checkpoint hash to verify cryptographic chain integrity, zero tamper status, and immutable block timestamp.
               </p>
 
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={searchHash}
-                  onChange={(e) => setSearchHash(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchHash(e.target.value)}
                   placeholder="Paste transaction / checkpoint hash 0x..."
                   className="flex-1 rounded-lg border border-[#0A3D24] bg-[#05070A] px-3 py-2 font-mono text-xs text-[#00FF7F] focus:border-[#00FF7F] focus:outline-none"
                 />
@@ -278,7 +256,7 @@ export default function AdminPage() {
                   </label>
                   <select
                     value={telemetryFreq}
-                    onChange={(e) => setTelemetryFreq(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTelemetryFreq(e.target.value)}
                     className="w-full rounded border border-[#0A3D24] bg-[#05070A] p-2 text-[#E8FCEF] focus:border-[#00FF7F] focus:outline-none cursor-pointer"
                   >
                     <option value="50Hz">50Hz (Standard)</option>
@@ -295,7 +273,7 @@ export default function AdminPage() {
                   </label>
                   <select
                     value={mlSensitivity}
-                    onChange={(e) => setMlSensitivity(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMlSensitivity(e.target.value)}
                     className="w-full rounded border border-[#0A3D24] bg-[#05070A] p-2 text-[#E8FCEF] focus:border-[#00FF7F] focus:outline-none cursor-pointer"
                   >
                     <option value="Relaxed (0.90)">Relaxed (0.90 Threshold)</option>
@@ -312,7 +290,7 @@ export default function AdminPage() {
                   </label>
                   <select
                     value={snapshotInterval}
-                    onChange={(e) => setSnapshotInterval(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSnapshotInterval(e.target.value)}
                     className="w-full rounded border border-[#0A3D24] bg-[#05070A] p-2 text-[#E8FCEF] focus:border-[#00FF7F] focus:outline-none cursor-pointer"
                   >
                     <option value="1.0 Second">1.0 Second (Real-Time Synchronous)</option>
@@ -328,7 +306,7 @@ export default function AdminPage() {
                   </label>
                   <select
                     value={encryptionAlgo}
-                    onChange={(e) => setEncryptionAlgo(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setEncryptionAlgo(e.target.value)}
                     className="w-full rounded border border-[#0A3D24] bg-[#05070A] p-2 text-[#00FF7F] focus:border-[#00FF7F] focus:outline-none cursor-pointer"
                   >
                     <option value="SHA-256 + Kyber-1024 Quantum-Safe">SHA-256 + Kyber-1024 Quantum-Safe</option>
