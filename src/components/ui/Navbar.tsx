@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Zap, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { DottedLogo } from "./DottedLogo";
 
 export const Navbar: React.FC = () => {
@@ -28,29 +28,26 @@ export const Navbar: React.FC = () => {
           </Link>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-8 text-xs font-bold uppercase tracking-[0.12em] text-[#0B192C]">
-            <Link href="/#about" className="hover:text-[#00A8FF] transition-colors py-2">
-              About
+          <nav className="hidden lg:flex items-center gap-6 xl:gap-8 text-xs font-bold uppercase tracking-[0.12em] text-[#0B192C]">
+            <Link href="/student" className="hover:text-[#00A8FF] transition-colors py-2">
+              Student Portal
             </Link>
-            <Link href="/#features" className="hover:text-[#00A8FF] transition-colors py-2">
-              Features
-            </Link>
-            <Link href="/#modules" className="hover:text-[#00A8FF] transition-colors py-2">
-              Modules
+            <Link href="/teacher" className="hover:text-[#00A8FF] transition-colors py-2">
+              Teacher Studio
             </Link>
             <Link href="/dashboard" className="hover:text-[#00A8FF] transition-colors py-2">
               Proctor Console
             </Link>
+            <Link href="/admin" className="hover:text-[#00A8FF] transition-colors py-2">
+              Admin Hub
+            </Link>
             <Link href="/architecture" className="hover:text-[#00A8FF] transition-colors py-2">
               Architecture
-            </Link>
-            <Link href="/#contact" className="hover:text-[#00A8FF] transition-colors py-2">
-              Pilot Request
             </Link>
           </nav>
 
           {/* Right Action CTAs */}
-          <div className="hidden sm:flex items-center gap-4">
+          <div className="hidden sm:flex items-center gap-3.5">
             <Link
               href="/login"
               className="text-xs uppercase tracking-wider font-bold text-[#0B192C] hover:text-[#00A8FF] px-3 py-2 transition-colors"
@@ -59,9 +56,9 @@ export const Navbar: React.FC = () => {
             </Link>
             <Link
               href="/student"
-              className="btn-cyan !py-2.5 !px-6 !text-xs"
+              className="btn-cyan !py-2.5 !px-5 !text-xs"
             >
-              Launch Exam
+              Launch Exam Pod
             </Link>
           </div>
 
@@ -79,19 +76,18 @@ export const Navbar: React.FC = () => {
         {isMobileOpen && (
           <div className="lg:hidden bg-white border-t border-[#E1E8F0] px-6 py-5 space-y-4 shadow-xl">
             <div className="flex flex-col space-y-3 text-xs uppercase tracking-wider font-bold text-[#0B192C]">
-              <Link href="/#about" onClick={() => setIsMobileOpen(false)} className="py-2 border-b border-[#F0F5FA]">About</Link>
-              <Link href="/#features" onClick={() => setIsMobileOpen(false)} className="py-2 border-b border-[#F0F5FA]">Features</Link>
-              <Link href="/#modules" onClick={() => setIsMobileOpen(false)} className="py-2 border-b border-[#F0F5FA]">Modules</Link>
+              <Link href="/student" onClick={() => setIsMobileOpen(false)} className="py-2 border-b border-[#F0F5FA]">Student Portal</Link>
+              <Link href="/teacher" onClick={() => setIsMobileOpen(false)} className="py-2 border-b border-[#F0F5FA]">Teacher Studio</Link>
               <Link href="/dashboard" onClick={() => setIsMobileOpen(false)} className="py-2 border-b border-[#F0F5FA]">Proctor Console</Link>
+              <Link href="/admin" onClick={() => setIsMobileOpen(false)} className="py-2 border-b border-[#F0F5FA]">Admin Hub</Link>
               <Link href="/architecture" onClick={() => setIsMobileOpen(false)} className="py-2 border-b border-[#F0F5FA]">Architecture</Link>
-              <Link href="/#contact" onClick={() => setIsMobileOpen(false)} className="py-2 border-b border-[#F0F5FA]">Pilot Request</Link>
             </div>
             <div className="pt-2 flex flex-col gap-2.5">
               <Link href="/login" onClick={() => setIsMobileOpen(false)} className="w-full text-center py-2.5 rounded-full border border-[#0B192C] text-xs uppercase font-bold text-[#0B192C]">
                 Sign In
               </Link>
               <Link href="/student" onClick={() => setIsMobileOpen(false)} className="btn-cyan w-full text-center">
-                Launch Exam Portal
+                Launch Exam Pod
               </Link>
             </div>
           </div>
