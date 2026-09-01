@@ -6,7 +6,7 @@ import {
   ArrowLeft,
   Server,
   ShieldCheck,
-  Sliders,
+  SlidersHorizontal,
   Search,
   CheckCircle2,
   Globe
@@ -263,7 +263,7 @@ export default function AdminPage() {
           <div className="lg:col-span-5 space-y-4">
             <GlassCard className="p-5 space-y-4 border-[#0A3D24]">
               <div className="flex items-center gap-2 border-b border-[#0A3D24] pb-3">
-                <Sliders className="h-5 w-5 text-[#00FF7F]" />
+                <SlidersHorizontal className="h-5 w-5 text-[#00FF7F]" />
                 <h3 className="font-heading font-bold text-base text-[#E8FCEF]">
                   ENGINE CONFIGURATION
                 </h3>

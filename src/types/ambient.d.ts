@@ -115,6 +115,21 @@ declare module "lucide-react" {
   export const CheckCheck: FC<IconProps>;
   export const HelpCircle: FC<IconProps>;
   export const Info: FC<IconProps>;
+  export const SlidersHorizontal: FC<IconProps>;
+  export const CheckCircle2: FC<IconProps>;
+  export const XCircle: FC<IconProps>;
+  export const BrainCircuit: FC<IconProps>;
+  export const BookmarkCheck: FC<IconProps>;
+  export const FileCheck2: FC<IconProps>;
+  export const FileCode: FC<IconProps>;
+  export const GraduationCap: FC<IconProps>;
+  export const Network: FC<IconProps>;
+  export const Code: FC<IconProps>;
+  export const Battery: FC<IconProps>;
+  export const AlertOctagon: FC<IconProps>;
+  export const UserCheck: FC<IconProps>;
+  export const Menu: FC<IconProps>;
+  export const LogIn: FC<IconProps>;
 }
 
 declare module "framer-motion" {
