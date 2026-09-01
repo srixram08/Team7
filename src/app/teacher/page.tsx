@@ -25,6 +25,7 @@ import {
   LogOut
 } from "lucide-react";
 import { DottedLogo } from "@/components/ui/DottedLogo";
+import { DotField } from "@/components/ui/DotField";
 import {
   Exam,
   ExamQuestion,
@@ -168,7 +169,22 @@ export default function TeacherPortalPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F8FC] text-[#0E1E33] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F4F8FC] text-[#0E1E33] flex flex-col font-sans relative overflow-hidden">
+      
+      {/* React Bits DotField Interactive Ambient Grid */}
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
+        <DotField
+          dotRadius={1.5}
+          dotSpacing={16}
+          bulgeStrength={50}
+          glowRadius={180}
+          sparkle={true}
+          gradientFrom="rgba(0, 168, 255, 0.35)"
+          gradientTo="rgba(0, 102, 204, 0.15)"
+          glowColor="rgba(0, 168, 255, 0.2)"
+        />
+      </div>
+
       {/* Header */}
       <header className="border-b border-[#122B48] bg-[#07111E] text-white px-4 py-3.5 sm:px-6 sticky top-0 z-40 shadow-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
@@ -208,7 +224,7 @@ export default function TeacherPortalPage() {
       </header>
 
       {/* Main Studio Container */}
-      <main className="flex-1 mx-auto max-w-7xl w-full p-4 sm:p-6 space-y-6">
+      <main className="flex-1 mx-auto max-w-7xl w-full p-4 sm:p-6 space-y-6 relative z-10">
         
         {/* Top Header & Navigation Tabs */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">

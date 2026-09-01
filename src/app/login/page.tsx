@@ -16,6 +16,7 @@ import {
   Cpu
 } from "lucide-react";
 import { DottedLogo } from "@/components/ui/DottedLogo";
+import { Lightfall } from "@/components/ui/Lightfall";
 import { STUDENTS_DATA } from "@/lib/examStore";
 
 export default function LoginPage() {
@@ -63,6 +64,27 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#07111E] text-white flex flex-col justify-between font-sans selection:bg-[#00A8FF] selection:text-white relative overflow-hidden">
       
+      {/* React Bits Lightfall Dynamic WebGL Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-60">
+        <Lightfall
+          colors={["#00A8FF", "#00E5FF", "#5227FF", "#0077CC"]}
+          backgroundColor="#07111E"
+          speed={0.6}
+          streakCount={6}
+          streakWidth={1}
+          streakLength={1.2}
+          glow={1.3}
+          density={0.6}
+          twinkle={1}
+          zoom={2.5}
+          backgroundGlow={0.7}
+          opacity={0.8}
+          mouseInteraction={true}
+          mouseStrength={0.6}
+          mouseRadius={0.9}
+        />
+      </div>
+
       {/* Background Orbital Glows */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#00A8FF]/10 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-[#0066CC]/10 rounded-full blur-[120px] pointer-events-none" />

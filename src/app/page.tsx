@@ -35,6 +35,7 @@ import {
 import { Navbar } from "@/components/ui/Navbar";
 import { Footer } from "@/components/ui/Footer";
 import { DottedLogo } from "@/components/ui/DottedLogo";
+import { Lightfall } from "@/components/ui/Lightfall";
 
 export default function Home() {
   // FAQ Accordion State
@@ -86,8 +87,30 @@ export default function Home() {
       <main className="flex-1 w-full">
         
         {/* ================= 1. HERO SECTION (DEEP MIDNIGHT NAVY + CYAN GLOW) ================= */}
-        <section className="hero-navy-wrapper">
-          <div className="hero-content">
+        <section className="hero-navy-wrapper relative overflow-hidden">
+          
+          {/* React Bits Lightfall Dynamic WebGL Background */}
+          <div className="absolute inset-0 z-0 pointer-events-none opacity-75">
+            <Lightfall
+              colors={["#00A8FF", "#00E5FF", "#5227FF", "#0077CC"]}
+              backgroundColor="#07111E"
+              speed={0.7}
+              streakCount={8}
+              streakWidth={1.2}
+              streakLength={1.2}
+              glow={1.4}
+              density={0.7}
+              twinkle={1}
+              zoom={2.2}
+              backgroundGlow={0.8}
+              opacity={0.85}
+              mouseInteraction={true}
+              mouseStrength={0.7}
+              mouseRadius={0.9}
+            />
+          </div>
+
+          <div className="hero-content relative z-10">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
               
               {/* Left Column: Hero Typography & CTAs */}
