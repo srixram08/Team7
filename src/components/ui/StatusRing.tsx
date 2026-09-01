@@ -24,25 +24,25 @@ export const StatusRing = ({
     { bg: string; ping: string; shadow: string; label: string; textColor: string }
   > = {
     stable: {
-      bg: "bg-[#00FF7F]",
-      ping: "bg-[#00FF7F]",
-      shadow: "shadow-[0_0_8px_#00FF7F]",
+      bg: "bg-[#00A8FF]",
+      ping: "bg-[#00A8FF]",
+      shadow: "shadow-[0_0_8px_rgba(0,168,255,0.6)]",
       label: "STABLE",
-      textColor: "text-[#00FF7F]",
+      textColor: "text-[#00A8FF]",
     },
     "at-risk": {
       bg: "bg-[#FFB020]",
       ping: "bg-[#FFB020]",
       shadow: "shadow-[0_0_8px_#FFB020]",
       label: "AT RISK",
-      textColor: "text-[#FFB020]",
+      textColor: "text-[#D97706]",
     },
     recovering: {
-      bg: "bg-[#FF4D4D]",
-      ping: "bg-[#FF4D4D]",
-      shadow: "shadow-[0_0_10px_#FF4D4D]",
+      bg: "bg-[#EF4444]",
+      ping: "bg-[#EF4444]",
+      shadow: "shadow-[0_0_10px_#EF4444]",
       label: "RECOVERING",
-      textColor: "text-[#FF4D4D]",
+      textColor: "text-[#EF4444]",
     },
   };
 

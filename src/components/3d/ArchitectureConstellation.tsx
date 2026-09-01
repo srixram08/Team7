@@ -13,12 +13,12 @@ interface NodeData {
 }
 
 const NODES: NodeData[] = [
-  { id: "client", label: "Client Device", position: [-3, 1.2, 0], color: "#00FF7F" },
-  { id: "edge", label: "Edge Cache Layer", position: [-1.5, -0.8, 0], color: "#00C853" },
+  { id: "client", label: "Client Device", position: [-3, 1.2, 0], color: "#00A8FF" },
+  { id: "edge", label: "Edge Cache Layer", position: [-1.5, -0.8, 0], color: "#0077CC" },
   { id: "ai", label: "AI Risk ML Engine", position: [0, 1.5, 0], color: "#FFB020" },
-  { id: "twin", label: "Digital Twin Store", position: [1.5, -0.8, 0], color: "#00FF7F" },
-  { id: "rollback", label: "Rollback Engine", position: [3, 1.2, 0], color: "#00FF7F" },
-  { id: "audit", label: "Audit Hash Chain", position: [0, -1.8, 0], color: "#00FF7F" },
+  { id: "twin", label: "Digital Twin Store", position: [1.5, -0.8, 0], color: "#00A8FF" },
+  { id: "rollback", label: "Rollback Engine", position: [3, 1.2, 0], color: "#00A8FF" },
+  { id: "audit", label: "Audit Hash Chain", position: [0, -1.8, 0], color: "#00A8FF" },
 ];
 
 const CONNECTIONS: [string, string][] = [
@@ -43,8 +43,8 @@ export const ArchitectureConstellationContent: React.FC = () => {
 
   return (
     <group ref={groupRef}>
-      <ambientLight intensity={0.7} />
-      <pointLight position={[5, 5, 5]} intensity={1.2} color="#00FF7F" />
+      <ambientLight intensity={0.8} />
+      <pointLight position={[5, 5, 5]} intensity={1.5} color="#00A8FF" />
 
       {/* Connecting Lines */}
       {CONNECTIONS.map(([fromId, toId], idx) => {
@@ -59,7 +59,7 @@ export const ArchitectureConstellationContent: React.FC = () => {
           <Line
             key={idx}
             points={[fromNode.position, toNode.position]}
-            color={isHighlighted ? "#00FF7F" : "#0A3D24"}
+            color={isHighlighted ? "#00A8FF" : "#1E3A5F"}
             lineWidth={isHighlighted ? 3 : 1.5}
           />
         );
@@ -77,9 +77,9 @@ export const ArchitectureConstellationContent: React.FC = () => {
           >
             <Sphere args={[isHovered ? 0.35 : 0.25, 32, 32]}>
               <meshStandardMaterial
-                color={isHovered ? "#00FF7F" : node.color}
-                emissive={isHovered ? "#00FF7F" : node.color}
-                emissiveIntensity={isHovered ? 1.2 : 0.5}
+                color={isHovered ? "#00A8FF" : node.color}
+                emissive={isHovered ? "#00A8FF" : node.color}
+                emissiveIntensity={isHovered ? 1.4 : 0.6}
               />
             </Sphere>
 
@@ -87,10 +87,9 @@ export const ArchitectureConstellationContent: React.FC = () => {
             <Text
               position={[0, 0.45, 0]}
               fontSize={0.22}
-              color={isHovered ? "#00FF7F" : "#E8FCEF"}
+              color={isHovered ? "#00A8FF" : "#FFFFFF"}
               anchorX="center"
               anchorY="middle"
-              font="https://fonts.gstatic.com/s/spacegrotesk/v16/V8mQoQDjQSkFtoMM3T6r8E7B.woff2"
             >
               {node.label}
             </Text>

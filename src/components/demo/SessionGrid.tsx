@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, Cpu } from "lucide-react";
+import { Search, Cpu, Users } from "lucide-react";
 import { CandidateSession } from "@/lib/simulationEngine";
 import { StatusRing, SessionStatus } from "../ui/StatusRing";
 
@@ -29,41 +29,41 @@ export const SessionGrid: React.FC<SessionGridProps> = ({
   });
 
   return (
-    <div className="flex flex-col h-full rounded-xl border border-[#0A3D24] bg-[#0B120E]/90 backdrop-blur-md p-4 text-[#E8FCEF]">
+    <div className="flex flex-col h-full rounded-2xl border border-[#E1E8F0] bg-white shadow-sm p-4 text-[#0E1E33]">
       {/* Header & Filter Controls */}
-      <div className="space-y-3 border-b border-[#0A3D24] pb-4 mb-3">
+      <div className="space-y-3 border-b border-[#E1E8F0] pb-4 mb-3">
         <div className="flex items-center justify-between">
-          <h3 className="font-heading text-sm font-bold uppercase tracking-wider text-[#00FF7F] flex items-center gap-2">
-            <Cpu className="h-4 w-4 text-[#00FF7F]" />
-            <span>EXAMINEE SESSIONS</span>
+          <h3 className="font-heading text-xs font-bold uppercase tracking-wider text-[#0B192C] flex items-center gap-2">
+            <Users className="h-4 w-4 text-[#00A8FF]" />
+            <span>Examinee Sessions</span>
           </h3>
-          <span className="font-mono text-xs text-[#7FA98F] bg-[#05070A] px-2 py-0.5 rounded border border-[#0A3D24]">
+          <span className="font-mono text-xs text-[#00A8FF] bg-[#E6F5FF] px-2.5 py-0.5 rounded-full border border-[#00A8FF]/30 font-bold">
             {filteredCandidates.length} ACTIVE
           </span>
         </div>
 
         {/* Search Input */}
         <div className="relative">
-          <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#7FA98F]" />
+          <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#556B82]" />
           <input
             type="text"
             placeholder="Search student or ID..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-md border border-[#0A3D24] bg-[#05070A] pl-9 pr-3 py-1.5 font-mono text-xs text-[#E8FCEF] placeholder-[#7FA98F] focus:border-[#00FF7F] focus:outline-none"
+            className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] pl-9 pr-3 py-2 font-sans text-xs text-[#0B192C] placeholder-[#8AA4BE] focus:border-[#00A8FF] focus:bg-white focus:outline-none"
           />
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar text-[11px] font-mono">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-[11px] font-mono">
           {(["all", "stable", "at-risk", "recovering"] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-2.5 py-1 rounded uppercase tracking-wider transition-colors shrink-0 ${
+              className={`px-3 py-1 rounded-full uppercase tracking-wider transition-colors shrink-0 cursor-pointer ${
                 filter === f
-                  ? "bg-[#0A3D24] text-[#00FF7F] font-bold border border-[#00FF7F]/40"
-                  : "text-[#7FA98F] hover:text-[#E8FCEF]"
+                  ? "bg-[#00A8FF] text-white font-bold shadow-sm"
+                  : "bg-[#F4F8FC] text-[#556B82] hover:text-[#0B192C] hover:bg-[#E6F5FF]"
               }`}
             >
               {f}
@@ -81,46 +81,29 @@ export const SessionGrid: React.FC<SessionGridProps> = ({
             <div
               key={candidate.id}
               onClick={() => onSelectCandidate(candidate.id)}
-              className={`group relative cursor-pointer rounded-lg border p-3 font-mono transition-all duration-200 ${
+              className={`group relative cursor-pointer rounded-xl border p-3 font-sans transition-all duration-200 ${
                 isSelected
-                  ? "border-[#00FF7F] bg-[#101A14] shadow-[0_0_15px_rgba(0,255,127,0.2)]"
-                  : "border-[#0A3D24] bg-[#05070A]/80 hover:border-[#00FF7F]/40 hover:bg-[#0B120E]"
+                  ? "border-[#00A8FF] bg-[#E6F5FF] shadow-md ring-1 ring-[#00A8FF]"
+                  : "border-[#E1E8F0] bg-[#FAFCFE] hover:border-[#00A8FF] hover:bg-white"
               }`}
             >
               <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center gap-2">
                   <StatusRing status={candidate.status} size="sm" />
-                  <span className="font-heading font-bold text-xs text-[#E8FCEF] group-hover:text-[#00FF7F]">
+                  <span className="font-heading font-bold text-xs text-[#0B192C] group-hover:text-[#00A8FF]">
                     {candidate.name}
                   </span>
                 </div>
-                <span className="text-[10px] text-[#7FA98F]">{candidate.id}</span>
+                <span className="text-[10px] font-mono text-[#556B82]">{candidate.id}</span>
               </div>
 
-              <div className="text-[11px] text-[#7FA98F] truncate mb-2">
+              <div className="text-[11px] text-[#556B82] truncate mb-2">
                 {candidate.examSubject}
               </div>
 
-              {/* Progress & Risk Score Bar */}
-              <div className="flex items-center justify-between text-[10px] border-t border-[#0A3D24]/60 pt-2 text-[#7FA98F]">
-                <div>
-                  Q <span className="text-[#E8FCEF] font-bold">{candidate.currentQuestion}</span> / {candidate.totalQuestions}
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <span>Risk Score:</span>
-                  <span
-                    className={`font-bold ${
-                      candidate.riskScore > 60
-                        ? "text-[#FF4D4D]"
-                        : candidate.riskScore > 30
-                        ? "text-[#FFB020]"
-                        : "text-[#00FF7F]"
-                    }`}
-                  >
-                    {candidate.riskScore}%
-                  </span>
-                </div>
+              <div className="flex items-center justify-between font-mono text-[10px] text-[#556B82] border-t border-[#E1E8F0]/60 pt-1.5">
+                <span>Latency: <strong className="text-[#00A8FF]">{candidate.latency}ms</strong></span>
+                <span>Risk: <strong className={candidate.riskScore > 60 ? "text-[#D97706]" : "text-[#00A8FF]"}>{candidate.riskScore}%</strong></span>
               </div>
             </div>
           );

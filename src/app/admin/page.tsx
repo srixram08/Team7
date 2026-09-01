@@ -9,10 +9,14 @@ import {
   SlidersHorizontal,
   Search,
   CheckCircle2,
-  Globe
+  Globe,
+  Zap,
+  Cpu,
+  Lock,
+  Activity,
+  ArrowRight
 } from "lucide-react";
-import { GlowButton } from "@/components/ui/GlowButton";
-import { GlassCard } from "@/components/ui/GlassCard";
+import { DottedLogo } from "@/components/ui/DottedLogo";
 
 interface EdgeNode {
   id: string;
@@ -79,256 +83,266 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#05070A] text-[#E8FCEF] flex flex-col scanlines">
+    <div className="min-h-screen bg-[#F4F8FC] text-[#0E1E33] flex flex-col font-sans">
       {/* Header */}
-      <header className="border-b border-[#0A3D24] bg-[#0B120E] px-4 py-3 sm:px-6">
+      <header className="border-b border-[#122B48] bg-[#07111E] text-white px-4 py-3 sm:px-6 sticky top-0 z-40 shadow-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2 font-mono text-xs text-[#7FA98F] hover:text-[#00FF7F] transition-colors">
+            <Link href="/" className="flex items-center gap-2 font-sans text-xs text-[#8AA4BE] hover:text-[#00A8FF] transition-colors">
               <ArrowLeft className="h-4 w-4" />
               <span>EXIT TO PORTAL</span>
             </Link>
-            <div className="h-4 w-px bg-[#0A3D24]" />
-            <div className="flex items-center gap-2">
-              <Server className="h-4 w-4 text-[#00FF7F]" />
-              <span className="font-heading text-sm font-bold text-[#E8FCEF]">
-                ADMINISTRATIVE ARCHITECTURE CONSOLE
+            <div className="h-4 w-px bg-[#1E3A5F]" />
+            <div className="flex items-center gap-2.5">
+              <DottedLogo size={26} />
+              <span className="font-heading text-sm font-bold text-white">
+                ADMINISTRATIVE FAILOVER & TOPOLOGY HUB
               </span>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="flex h-2 w-2 rounded-full bg-[#00FF7F] animate-pulse" />
-            <span className="font-mono text-xs text-[#00FF7F]">FAILOVER MESH ARMED</span>
+            <span className="flex h-2 w-2 rounded-full bg-[#00A8FF] animate-pulse" />
+            <span className="font-mono text-xs font-bold text-[#00A8FF]">
+              SYSTEM HEALTH: 100% (6/6 NODES)
+            </span>
           </div>
         </div>
       </header>
 
-      {/* Toast Banner */}
-      {toastMessage && (
-        <div className="bg-[#00FF7F] text-[#05070A] px-4 py-2 text-center font-mono text-xs font-bold transition-all">
-          {toastMessage}
-        </div>
-      )}
-
       {/* Main Container */}
-      <div className="mx-auto max-w-7xl flex-1 px-4 py-6 sm:px-6 space-y-8">
-        {/* Section 1: Edge Node Topology Grid */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 font-heading font-bold text-base text-[#E8FCEF]">
-              <Globe className="h-4 w-4 text-[#00FF7F]" />
-              GLOBAL EDGE NODE TOPOLOGY & FAILOVER MESH
+      <main className="flex-1 mx-auto max-w-7xl w-full p-4 sm:p-6 space-y-6">
+        
+        {/* Title Area */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+          <div>
+            <div className="font-mono text-xs font-bold text-[#00A8FF] uppercase tracking-wider">
+              INFRASTRUCTURE ORCHESTRATION
             </div>
-            <span className="font-mono text-xs text-[#7FA98F]">
-              Total Active Candidates: <strong className="text-[#00FF7F]">18,940</strong>
+            <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-[#0B192C] mt-0.5">
+              Global Edge Topology & Merkle Proof Hub
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-xs font-bold text-[#00A8FF] bg-[#E6F5FF] border border-[#00A8FF]/30 px-4 py-2 rounded-full">
+              FAILOVER SLA: &lt; 2.4s GUARANTEE
+            </span>
+          </div>
+        </div>
+
+        {/* SECTION 1: GLOBAL EDGE NODES */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 font-heading font-bold text-lg text-[#0B192C]">
+              <Globe className="h-5 w-5 text-[#00A8FF]" />
+              <span>Active Edge Node Mesh (6 Geographical Clusters)</span>
+            </div>
+            <span className="text-xs text-[#556B82] font-mono">
+              Click node to simulate failover event
             </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {nodes.map((node: EdgeNode) => (
-              <div key={node.id}>
-                <GlassCard className="p-4 space-y-3 border-[#0A3D24]">
-                  <div className="flex items-center justify-between font-mono text-xs">
-                    <span className="font-bold text-[#E8FCEF]">{node.name}</span>
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] uppercase font-mono ${
-                        node.status === "active"
-                          ? "bg-[#0A3D24] text-[#00FF7F]"
-                          : "bg-[#FFB020]/20 text-[#FFB020] border border-[#FFB020]/40"
-                      }`}
-                    >
-                      {node.status}
-                    </span>
+            {nodes.map((node) => (
+              <div
+                key={node.id}
+                onClick={() => handleTriggerFailover(node.id)}
+                className={`card-modern !p-5 cursor-pointer transition-all ${
+                  node.status === "warning"
+                    ? "border-[#FFB020] bg-[#FFFBF0] shadow-md ring-2 ring-[#FFB020]/30"
+                    : "hover:border-[#00A8FF]"
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="font-heading font-bold text-base text-[#0B192C]">
+                      {node.name}
+                    </h3>
+                    <p className="text-xs text-[#556B82] mt-0.5">{node.location}</p>
                   </div>
-
-                  <div className="grid grid-cols-3 gap-2 font-mono text-[11px] bg-[#05070A] p-2.5 rounded border border-[#0A3D24]">
-                    <div>
-                      <div className="text-[#7FA98F] text-[9px] uppercase">Latency</div>
-                      <div className="text-[#00FF7F] font-bold">{node.latencyMs} ms</div>
-                    </div>
-                    <div>
-                      <div className="text-[#7FA98F] text-[9px] uppercase">CPU Load</div>
-                      <div className={node.cpuUsage > 70 ? "text-[#FFB020]" : "text-[#00FF7F]"}>
-                        {node.cpuUsage}%
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[#7FA98F] text-[9px] uppercase">Sessions</div>
-                      <div className="text-[#E8FCEF] font-bold">{node.activeSessions}</div>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => handleTriggerFailover(node.id)}
-                    className="w-full py-1.5 rounded border border-[#0A3D24] bg-[#0B120E] font-mono text-[11px] text-[#7FA98F] hover:text-[#00FF7F] hover:border-[#00FF7F]/40 transition-colors cursor-pointer"
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-mono font-bold uppercase ${
+                      node.status === "active"
+                        ? "bg-[#E6F5FF] text-[#00A8FF] border border-[#00A8FF]/30"
+                        : node.status === "warning"
+                        ? "bg-[#FFB020]/20 text-[#D97706] border border-[#FFB020]"
+                        : "bg-[#E1E8F0] text-[#556B82]"
+                    }`}
                   >
-                    Simulate Node Stress / Failover
-                  </button>
-                </GlassCard>
+                    {node.status}
+                  </span>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-[#E1E8F0] grid grid-cols-3 gap-2 font-mono text-center">
+                  <div>
+                    <div className="text-[10px] text-[#556B82]">Sessions</div>
+                    <div className="text-xs font-bold text-[#0B192C]">{node.activeSessions.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-[#556B82]">Latency</div>
+                    <div className="text-xs font-bold text-[#00A8FF]">{node.latencyMs}ms</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-[#556B82]">CPU Load</div>
+                    <div className={`text-xs font-bold ${node.cpuUsage > 80 ? "text-[#D97706]" : "text-[#0B192C]"}`}>
+                      {node.cpuUsage}%
+                    </div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Section 2: Cryptographic Audit Ledger Inspector & System Configurator */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Column: Cryptographic Ledger Verifier */}
-          <div className="lg:col-span-7 space-y-4">
-            <GlassCard className="p-5 space-y-4 border-[#0A3D24]">
-              <div className="flex items-center gap-2 border-b border-[#0A3D24] pb-3">
-                <ShieldCheck className="h-5 w-5 text-[#00FF7F]" />
-                <h3 className="font-heading font-bold text-base text-[#E8FCEF]">
-                  CRYPTOGRAPHIC LEDGER & SHA-256 HASH VERIFIER
-                </h3>
-              </div>
-
-              <p className="font-sans text-xs text-[#7FA98F] leading-relaxed">
-                Paste any ReviveX candidate checkpoint hash to verify cryptographic chain integrity, zero tamper status, and immutable block timestamp.
-              </p>
-
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={searchHash}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchHash(e.target.value)}
-                  placeholder="Paste transaction / checkpoint hash 0x..."
-                  className="flex-1 rounded-lg border border-[#0A3D24] bg-[#05070A] px-3 py-2 font-mono text-xs text-[#00FF7F] focus:border-[#00FF7F] focus:outline-none"
-                />
-                <GlowButton variant="primary" size="sm" onClick={handleVerifyHash} icon={<Search className="h-4 w-4" />}>
-                  Verify Hash
-                </GlowButton>
-              </div>
-
-              {/* Verification Output Card */}
-              {verificationResult && (
-                <div className="rounded-lg border border-[#00FF7F]/40 bg-[#05070A] p-4 space-y-3 font-mono text-xs">
-                  <div className="flex items-center gap-2 text-[#00FF7F] font-bold border-b border-[#0A3D24] pb-2">
-                    <CheckCircle2 className="h-4 w-4 text-[#00FF7F]" />
-                    {verificationResult.statusText}
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
-                    <div>
-                      <span className="text-[#7FA98F]">Candidate ID:</span>
-                      <div className="text-[#E8FCEF] font-semibold">{verificationResult.candidateId}</div>
-                    </div>
-                    <div>
-                      <span className="text-[#7FA98F]">Checkpoint ID:</span>
-                      <div className="text-[#00FF7F] font-semibold">{verificationResult.checkpointId}</div>
-                    </div>
-                    <div>
-                      <span className="text-[#7FA98F]">Block Number:</span>
-                      <div className="text-[#E8FCEF]">{verificationResult.blockNumber}</div>
-                    </div>
-                    <div>
-                      <span className="text-[#7FA98F]">Ledger Timestamp:</span>
-                      <div className="text-[#E8FCEF]">{verificationResult.timestamp}</div>
-                    </div>
-                  </div>
-
-                  <div className="pt-2 border-t border-[#0A3D24]">
-                    <span className="text-[#7FA98F] text-[10px]">Merkle Tree Root:</span>
-                    <div className="text-[#00FF7F] text-[11px] font-mono break-all">
-                      {verificationResult.merkleRoot}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </GlassCard>
+        {/* SECTION 2: MERKLE LEDGER PROOF SEARCH */}
+        <div className="card-modern !p-6 sm:!p-8 space-y-6">
+          <div className="flex items-center gap-2 font-heading font-bold text-xl text-[#0B192C] border-b border-[#E1E8F0] pb-4">
+            <ShieldCheck className="h-6 w-6 text-[#00A8FF]" />
+            <span>Cryptographic Merkle Proof Verifier</span>
           </div>
 
-          {/* Right Column: Platform Tuning Parameters */}
-          <div className="lg:col-span-5 space-y-4">
-            <GlassCard className="p-5 space-y-4 border-[#0A3D24]">
-              <div className="flex items-center gap-2 border-b border-[#0A3D24] pb-3">
-                <SlidersHorizontal className="h-5 w-5 text-[#00FF7F]" />
-                <h3 className="font-heading font-bold text-base text-[#E8FCEF]">
-                  ENGINE CONFIGURATION
-                </h3>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder="Enter SHA-256 Checkpoint Hash (e.g. 0xa8f492c10b7e49d2...)"
+                value={searchHash}
+                onChange={(e) => setSearchHash(e.target.value)}
+                className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3.5 pl-10 text-xs font-mono text-[#0B192C] focus:border-[#00A8FF] focus:bg-white focus:outline-none"
+              />
+              <Search className="h-4 w-4 text-[#556B82] absolute left-3.5 top-4 pointer-events-none" />
+            </div>
+            <button
+              onClick={handleVerifyHash}
+              className="btn-cyan !py-3.5 !px-6 shrink-0 cursor-pointer"
+            >
+              <span>Verify Cryptographic Root</span>
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Verification Results Card */}
+          {verificationResult && (
+            <div className="rounded-2xl border border-[#00A8FF]/30 bg-[#0B192C] text-white p-6 space-y-4 shadow-xl">
+              <div className="flex items-center gap-2 text-[#00A8FF] font-mono text-xs font-bold">
+                <CheckCircle2 className="h-4 w-4" />
+                <span>{verificationResult.statusText}</span>
               </div>
 
-              <div className="space-y-4 font-mono text-xs">
-                {/* Telemetry Stream Frequency */}
-                <div className="space-y-1.5">
-                  <label className="text-[#7FA98F] flex justify-between">
-                    <span>Telemetry Buffer Frequency:</span>
-                    <span className="text-[#00FF7F] font-bold">{telemetryFreq}</span>
-                  </label>
-                  <select
-                    value={telemetryFreq}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTelemetryFreq(e.target.value)}
-                    className="w-full rounded border border-[#0A3D24] bg-[#05070A] p-2 text-[#E8FCEF] focus:border-[#00FF7F] focus:outline-none cursor-pointer"
-                  >
-                    <option value="50Hz">50Hz (Standard)</option>
-                    <option value="100Hz">100Hz (High Precision - Default)</option>
-                    <option value="200Hz">200Hz (Ultra High-Definition Telemetry)</option>
-                  </select>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs pt-2">
+                <div className="p-3 rounded-xl bg-[#07111E] border border-[#1E3A5F]">
+                  <span className="text-[#8AA4BE] text-[10px] block">CANDIDATE ID</span>
+                  <span className="font-bold text-white">{verificationResult.candidateId}</span>
                 </div>
-
-                {/* ML Anomaly Sensitivity */}
-                <div className="space-y-1.5">
-                  <label className="text-[#7FA98F] flex justify-between">
-                    <span>ML Risk Sensitivity Threshold:</span>
-                    <span className="text-[#00FF7F] font-bold">{mlSensitivity}</span>
-                  </label>
-                  <select
-                    value={mlSensitivity}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMlSensitivity(e.target.value)}
-                    className="w-full rounded border border-[#0A3D24] bg-[#05070A] p-2 text-[#E8FCEF] focus:border-[#00FF7F] focus:outline-none cursor-pointer"
-                  >
-                    <option value="Relaxed (0.90)">Relaxed (0.90 Threshold)</option>
-                    <option value="Balanced (0.75)">Balanced (0.75 Threshold - Recommended)</option>
-                    <option value="Strict (0.50)">Strict (0.50 Paranoia Mode)</option>
-                  </select>
+                <div className="p-3 rounded-xl bg-[#07111E] border border-[#1E3A5F]">
+                  <span className="text-[#8AA4BE] text-[10px] block">CHECKPOINT</span>
+                  <span className="font-bold text-white">{verificationResult.checkpointId}</span>
                 </div>
-
-                {/* State Snapshot Sync Interval */}
-                <div className="space-y-1.5">
-                  <label className="text-[#7FA98F] flex justify-between">
-                    <span>State Snapshot Sync Interval:</span>
-                    <span className="text-[#00FF7F] font-bold">{snapshotInterval}</span>
-                  </label>
-                  <select
-                    value={snapshotInterval}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSnapshotInterval(e.target.value)}
-                    className="w-full rounded border border-[#0A3D24] bg-[#05070A] p-2 text-[#E8FCEF] focus:border-[#00FF7F] focus:outline-none cursor-pointer"
-                  >
-                    <option value="1.0 Second">1.0 Second (Real-Time Synchronous)</option>
-                    <option value="2.0 Seconds">2.0 Seconds (Standard Checkpoint)</option>
-                    <option value="5.0 Seconds">5.0 Seconds (Low Bandwidth Mode)</option>
-                  </select>
+                <div className="p-3 rounded-xl bg-[#07111E] border border-[#1E3A5F]">
+                  <span className="text-[#8AA4BE] text-[10px] block">BLOCK NUMBER</span>
+                  <span className="font-bold text-white">#{verificationResult.blockNumber}</span>
                 </div>
-
-                {/* Encryption Algorithm */}
-                <div className="space-y-1.5">
-                  <label className="text-[#7FA98F] flex justify-between">
-                    <span>Cryptographic Engine Standard:</span>
-                  </label>
-                  <select
-                    value={encryptionAlgo}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setEncryptionAlgo(e.target.value)}
-                    className="w-full rounded border border-[#0A3D24] bg-[#05070A] p-2 text-[#00FF7F] focus:border-[#00FF7F] focus:outline-none cursor-pointer"
-                  >
-                    <option value="SHA-256 + Kyber-1024 Quantum-Safe">SHA-256 + Kyber-1024 Quantum-Safe</option>
-                    <option value="ECDSA P-256 + AES-GCM-256">ECDSA P-256 + AES-GCM-256</option>
-                  </select>
-                </div>
-
-                <div className="pt-2">
-                  <GlowButton
-                    variant="primary"
-                    size="md"
-                    className="w-full"
-                    onClick={() => triggerToast("System Parameters successfully applied & distributed to 6 edge nodes!")}
-                  >
-                    Save & Distribute Settings
-                  </GlowButton>
+                <div className="p-3 rounded-xl bg-[#07111E] border border-[#1E3A5F]">
+                  <span className="text-[#8AA4BE] text-[10px] block">KEYSTROKE EVENTS</span>
+                  <span className="font-bold text-[#00A8FF]">{verificationResult.keystrokesCount} Events</span>
                 </div>
               </div>
-            </GlassCard>
+
+              <div className="p-3.5 rounded-xl bg-[#07111E] border border-[#1E3A5F] font-mono text-xs">
+                <span className="text-[#8AA4BE] text-[10px] block mb-1">MERKLE ROOT SIGNATURE</span>
+                <span className="text-[#00A8FF] break-all">{verificationResult.merkleRoot}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* SECTION 3: SYSTEM CONFIGURATION PARAMETERS */}
+        <div className="card-modern !p-6 sm:!p-8 space-y-6">
+          <div className="flex items-center gap-2 font-heading font-bold text-xl text-[#0B192C] border-b border-[#E1E8F0] pb-4">
+            <SlidersHorizontal className="h-6 w-6 text-[#00A8FF]" />
+            <span>Autonomous Engine Configuration Parameters</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-xs font-bold text-[#0B192C] uppercase tracking-wider mb-2">
+                Local Telemetry Buffering Frequency
+              </label>
+              <select
+                value={telemetryFreq}
+                onChange={(e) => setTelemetryFreq(e.target.value)}
+                className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs font-semibold text-[#0B192C] focus:border-[#00A8FF] focus:outline-none"
+              >
+                <option value="100Hz">100Hz (10ms tick delta) • Recommended</option>
+                <option value="50Hz">50Hz (20ms tick delta)</option>
+                <option value="200Hz">200Hz Ultra-High Fidelity (5ms tick delta)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-[#0B192C] uppercase tracking-wider mb-2">
+                Explainable AI Anomaly Sensitivity
+              </label>
+              <select
+                value={mlSensitivity}
+                onChange={(e) => setMlSensitivity(e.target.value)}
+                className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs font-semibold text-[#0B192C] focus:border-[#00A8FF] focus:outline-none"
+              >
+                <option value="High (0.90)">High Sensitivity (0.90 Index)</option>
+                <option value="Balanced (0.75)">Balanced (0.75 Index) • Standard</option>
+                <option value="Permissive (0.60)">Permissive (0.60 Index)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-[#0B192C] uppercase tracking-wider mb-2">
+                Digital Twin Shadow Snapshot Interval
+              </label>
+              <select
+                value={snapshotInterval}
+                onChange={(e) => setSnapshotInterval(e.target.value)}
+                className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs font-semibold text-[#0B192C] focus:border-[#00A8FF] focus:outline-none"
+              >
+                <option value="1.0 Seconds">1.0 Seconds</option>
+                <option value="2.0 Seconds">2.0 Seconds (Default Benchmark)</option>
+                <option value="5.0 Seconds">5.0 Seconds</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-[#0B192C] uppercase tracking-wider mb-2">
+                Cryptographic Signature Algorithm
+              </label>
+              <select
+                value={encryptionAlgo}
+                onChange={(e) => setEncryptionAlgo(e.target.value)}
+                className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs font-semibold text-[#0B192C] focus:border-[#00A8FF] focus:outline-none"
+              >
+                <option value="SHA-256 + Kyber-1024 Quantum-Safe">SHA-256 + Kyber-1024 Quantum-Safe</option>
+                <option value="AES-GCM-256 Standard">AES-GCM-256 Standard</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="pt-2">
+            <button
+              onClick={() => triggerToast("System configuration updated across 6 global edge nodes.")}
+              className="btn-navy cursor-pointer"
+            >
+              <span>Save & Propagate Mesh Configurations</span>
+            </button>
           </div>
         </div>
-      </div>
+
+      </main>
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 bg-[#0B192C] text-white border border-[#00A8FF]/40 px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 font-sans text-xs">
+          <span className="h-2 w-2 rounded-full bg-[#00A8FF] animate-ping" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
     </div>
   );
 }

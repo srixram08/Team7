@@ -2,108 +2,104 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Zap, Terminal, Menu, X, UserCheck, Server, Layers, LogIn } from "lucide-react";
-import { GlowButton } from "./GlowButton";
+import { Zap, Menu, X } from "lucide-react";
+import { DottedLogo } from "./DottedLogo";
 
 export const Navbar: React.FC = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const navLinks = [
-    { label: "Proctor Console", href: "/dashboard", icon: <Terminal className="h-3.5 w-3.5" /> },
-    { label: "Student Exam", href: "/student", icon: <UserCheck className="h-3.5 w-3.5" /> },
-    { label: "Admin Hub", href: "/admin", icon: <Server className="h-3.5 w-3.5" /> },
-    { label: "Architecture Spec", href: "/architecture", icon: <Layers className="h-3.5 w-3.5" /> },
-  ];
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b border-[#D6E5D4] bg-white/90 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-8">
-        {/* Brand Logo */}
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#2E5B28] to-[#4E8B46] text-white shadow-[0_4px_14px_rgba(46,91,40,0.3)] transition-transform duration-300 group-hover:scale-105">
-            <Zap className="h-5 w-5 fill-current" />
-          </div>
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1.5 font-heading text-xl font-extrabold tracking-tight text-[#162215]">
-              <span>ReviveX</span>
-              <span className="rounded-full border border-[#D6E5D4] bg-[#E8F3E7] px-2 py-0.5 text-[10px] font-mono font-bold text-[#2E5B28]">
-                v2.4
+    <>
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm font-sans border-b border-[#E1E8F0]">
+        {/* Main Navbar Bar */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+          
+          {/* Brand Logo with Dotted Matrix */}
+          <Link href="/" className="flex items-center gap-3.5 group">
+            <DottedLogo size={42} className="group-hover:scale-105 transition-transform" />
+            <div className="flex flex-col">
+              <span className="font-heading text-2xl font-bold tracking-tight text-[#0B192C] leading-none">
+                ReviveX
+              </span>
+              <span className="text-[10px] uppercase tracking-[0.2em] text-[#00A8FF] font-sans mt-1 font-bold">
+                Resilience Platform
               </span>
             </div>
-            <span className="font-mono text-[9px] tracking-widest text-[#586B56] uppercase">
-              Autonomous Resilient Platform
-            </span>
-          </div>
-        </Link>
+          </Link>
 
-        {/* Desktop Nav Links */}
-        <nav className="hidden lg:flex items-center gap-7">
-          {navLinks.map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              className="flex items-center gap-1.5 font-sans text-xs uppercase tracking-wider font-bold text-[#586B56] hover:text-[#2E5B28] transition-colors duration-200"
-            >
-              {link.icon}
-              <span>{link.label}</span>
+          {/* Desktop Navigation Links */}
+          <nav className="hidden lg:flex items-center gap-8 text-xs font-bold uppercase tracking-[0.12em] text-[#0B192C]">
+            <Link href="/#about" className="hover:text-[#00A8FF] transition-colors py-2">
+              About
             </Link>
-          ))}
-        </nav>
+            <Link href="/#features" className="hover:text-[#00A8FF] transition-colors py-2">
+              Features
+            </Link>
+            <Link href="/#modules" className="hover:text-[#00A8FF] transition-colors py-2">
+              Modules
+            </Link>
+            <Link href="/dashboard" className="hover:text-[#00A8FF] transition-colors py-2">
+              Proctor Console
+            </Link>
+            <Link href="/architecture" className="hover:text-[#00A8FF] transition-colors py-2">
+              Architecture
+            </Link>
+            <Link href="/#contact" className="hover:text-[#00A8FF] transition-colors py-2">
+              Pilot Request
+            </Link>
+          </nav>
 
-        {/* Action Buttons */}
-        <div className="hidden sm:flex items-center gap-3">
-          <Link href="/login">
-            <GlowButton variant="outline" size="sm" icon={<LogIn className="h-3.5 w-3.5" />}>
+          {/* Right Action CTAs */}
+          <div className="hidden sm:flex items-center gap-4">
+            <Link
+              href="/login"
+              className="text-xs uppercase tracking-wider font-bold text-[#0B192C] hover:text-[#00A8FF] px-3 py-2 transition-colors"
+            >
               Sign In
-            </GlowButton>
-          </Link>
-          <Link href="/demo">
-            <GlowButton variant="primary" size="sm">
-              Launch Platform
-            </GlowButton>
-          </Link>
+            </Link>
+            <Link
+              href="/student"
+              className="btn-cyan !py-2.5 !px-6 !text-xs"
+            >
+              Launch Exam
+            </Link>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setIsMobileOpen(!isMobileOpen)}
+            className="lg:hidden p-2 text-[#0B192C] hover:text-[#00A8FF]"
+            aria-label="Toggle Menu"
+          >
+            {isMobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
         </div>
 
-        {/* Mobile Hamburger Toggle */}
-        <button
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-2 text-[#586B56] hover:text-[#2E5B28] lg:hidden"
-          aria-label="Toggle Navigation"
-        >
-          {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
-      </div>
-
-      {/* Mobile Dropdown Menu */}
-      {isMobileMenuOpen && (
-        <div className="border-b border-[#D6E5D4] bg-white px-4 pt-2 pb-6 lg:hidden">
-          <div className="flex flex-col space-y-3">
-            {navLinks.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center gap-2 font-sans text-sm uppercase tracking-wider font-bold text-[#586B56] hover:text-[#2E5B28] py-1"
-              >
-                {link.icon}
-                <span>{link.label}</span>
+        {/* Mobile Dropdown */}
+        {isMobileOpen && (
+          <div className="lg:hidden bg-white border-t border-[#E1E8F0] px-6 py-5 space-y-4 shadow-xl">
+            <div className="flex flex-col space-y-3 text-xs uppercase tracking-wider font-bold text-[#0B192C]">
+              <Link href="/#about" onClick={() => setIsMobileOpen(false)} className="py-2 border-b border-[#F0F5FA]">About</Link>
+              <Link href="/#features" onClick={() => setIsMobileOpen(false)} className="py-2 border-b border-[#F0F5FA]">Features</Link>
+              <Link href="/#modules" onClick={() => setIsMobileOpen(false)} className="py-2 border-b border-[#F0F5FA]">Modules</Link>
+              <Link href="/dashboard" onClick={() => setIsMobileOpen(false)} className="py-2 border-b border-[#F0F5FA]">Proctor Console</Link>
+              <Link href="/architecture" onClick={() => setIsMobileOpen(false)} className="py-2 border-b border-[#F0F5FA]">Architecture</Link>
+              <Link href="/#contact" onClick={() => setIsMobileOpen(false)} className="py-2 border-b border-[#F0F5FA]">Pilot Request</Link>
+            </div>
+            <div className="pt-2 flex flex-col gap-2.5">
+              <Link href="/login" onClick={() => setIsMobileOpen(false)} className="w-full text-center py-2.5 rounded-full border border-[#0B192C] text-xs uppercase font-bold text-[#0B192C]">
+                Sign In
               </Link>
-            ))}
-            <div className="pt-2 flex flex-col gap-2">
-              <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                <GlowButton variant="outline" size="md" className="w-full">
-                  Sign In
-                </GlowButton>
-              </Link>
-              <Link href="/demo" onClick={() => setIsMobileMenuOpen(false)}>
-                <GlowButton variant="primary" size="md" className="w-full">
-                  Launch Console
-                </GlowButton>
+              <Link href="/student" onClick={() => setIsMobileOpen(false)} className="btn-cyan w-full text-center">
+                Launch Exam Portal
               </Link>
             </div>
           </div>
-        </div>
-      )}
-    </header>
+        )}
+      </header>
+
+      {/* Dedicated layout spacer to ensure zero content clipping */}
+      <div className="h-20 w-full shrink-0" aria-hidden="true" />
+    </>
   );
 };

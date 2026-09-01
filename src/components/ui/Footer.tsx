@@ -1,113 +1,162 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import Link from "next/link";
-import { Cpu, ShieldCheck, Activity, Zap } from "lucide-react";
+import { Zap, ShieldCheck, Mail, Globe, ArrowRight, CheckCircle2, Server, Cpu, Check } from "lucide-react";
+import { DottedLogo } from "./DottedLogo";
 
 export const Footer: React.FC = () => {
+  const [email, setEmail] = useState("");
+  const [subscribed, setSubscribed] = useState(false);
+
+  const handleSubscribe = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email) {
+      setSubscribed(true);
+      setTimeout(() => setSubscribed(false), 4000);
+      setEmail("");
+    }
+  };
+
   return (
-    <footer className="relative border-t border-[#0A3D24] bg-[#05070A] pt-16 pb-12 text-[#7FA98F]">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-4">
-          {/* Brand Info */}
-          <div className="space-y-4 lg:col-span-1">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#2E5B28] text-white shadow-sm">
-                <Zap className="h-5 w-5 fill-current" />
+    <footer className="bg-[#07111E] text-white border-t border-[#122B48] font-sans">
+      {/* Top Main Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-14">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
+          
+          {/* Col 1: Brand Info */}
+          <div className="lg:col-span-2 space-y-6">
+            <Link href="/" className="flex items-center gap-3.5">
+              <DottedLogo size={44} />
+              <div>
+                <span className="font-heading text-2xl font-bold tracking-tight text-white block">
+                  ReviveX
+                </span>
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[#00A8FF] font-bold block">
+                  Resilience Platform
+                </span>
               </div>
-              <span className="font-heading text-lg font-bold text-[#E8FCEF]">ReviveX</span>
-            </div>
-            <p className="text-xs leading-relaxed text-[#7FA98F]">
-              Autonomous Resilient Online Examination Platform — Continuous risk-adaptive telemetry monitoring, verified state consistency, and explainable instant rollback.
+            </Link>
+
+            <p className="text-xs sm:text-sm text-[#8AA4BE] leading-relaxed max-w-sm">
+              Autonomous, edge-synchronized online examination platform with 100Hz local telemetry buffering, explainable AI anomaly detection, and sub-2.4s state recovery.
             </p>
-            <div className="flex items-center gap-2 text-xs font-mono text-[#00FF7F]">
-              <Activity className="h-4 w-4" />
-              <span>GLOBAL NODE HEALTH: 99.999% OPERATIONAL</span>
+
+            <div className="flex items-center gap-4 text-xs font-mono text-[#00A8FF]">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#00A8FF]/10 border border-[#00A8FF]/30">
+                <span className="h-2 w-2 rounded-full bg-[#00A8FF] animate-pulse" />
+                <span>GLOBAL EDGE MESH ACTIVE</span>
+              </span>
             </div>
           </div>
 
-          {/* Tech Stack Badges */}
-          <div>
-            <h4 className="font-mono text-xs uppercase tracking-widest text-[#E8FCEF] mb-4">
-              Core Architecture Stack
-            </h4>
-            <ul className="space-y-2 text-xs font-mono">
-              <li className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#00FF7F]" /> Next.js App Router + TypeScript
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#00FF7F]" /> Three.js & React Three Fiber
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#00FF7F]" /> IndexedDB + Local State Engine
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#00FF7F]" /> SHA-256 State Delta Hash Chain
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#00FF7F]" /> 100Hz Telemetry Stream Monitor
-              </li>
-            </ul>
-          </div>
-
-          {/* Platform Sections */}
-          <div>
-            <h4 className="font-mono text-xs uppercase tracking-widest text-[#E8FCEF] mb-4">
-              Platform Modules
-            </h4>
-            <ul className="space-y-2 text-xs">
-              <li>
-                <Link href="/student" className="hover:text-[#00FF7F] transition-colors">
-                  Student Examination Portal
-                </Link>
-              </li>
-              <li>
-                <Link href="/dashboard" className="hover:text-[#00FF7F] transition-colors">
-                  Proctor Monitoring Console
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin" className="hover:text-[#00FF7F] transition-colors">
-                  Admin Failover & Hash Verifier
-                </Link>
-              </li>
-              <li>
-                <Link href="/architecture" className="hover:text-[#00FF7F] transition-colors">
-                  System Architecture & 3D Spec
-                </Link>
-              </li>
-              <li>
-                <Link href="/login" className="hover:text-[#00FF7F] transition-colors">
-                  Account Sign In
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Trust & Hackathon Credits */}
+          {/* Col 2: Platform Modules */}
           <div className="space-y-4">
-            <h4 className="font-mono text-xs uppercase tracking-widest text-[#E8FCEF]">
-              Resilience & Integrity Spec
+            <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#00A8FF]">
+              Workspaces
             </h4>
-            <div className="rounded-lg border border-[#0A3D24] bg-[#0B120E] p-4 text-xs">
-              <div className="flex items-center gap-2 text-[#00FF7F] font-mono mb-2">
-                <ShieldCheck className="h-4 w-4" />
-                <span>FAULT-TOLERANT ARCHITECTURE</span>
-              </div>
-              <p className="text-[11px] text-[#7FA98F]">
-                Engineered to demonstrate sub-3-second recovery and zero silent data loss under catastrophic network drops & crash conditions.
-              </p>
-            </div>
+            <ul className="space-y-2.5 text-xs text-[#8AA4BE]">
+              <li>
+                <Link href="/student" className="hover:text-white transition-colors">
+                  Student Exam Pod
+                </Link>
+              </li>
+              <li>
+                <Link href="/dashboard" className="hover:text-white transition-colors">
+                  Proctor Console
+                </Link>
+              </li>
+              <li>
+                <Link href="/admin" className="hover:text-white transition-colors">
+                  Edge Failover Hub
+                </Link>
+              </li>
+              <li>
+                <Link href="/architecture" className="hover:text-white transition-colors">
+                  3D Architecture Spec
+                </Link>
+              </li>
+              <li>
+                <Link href="/demo" className="hover:text-white transition-colors">
+                  Chaos Engineering Demo
+                </Link>
+              </li>
+            </ul>
           </div>
-        </div>
 
-        <div className="mt-12 border-t border-[#0A3D24] pt-6 flex flex-col sm:flex-row items-center justify-between text-xs font-mono text-[#7FA98F] gap-4">
-          <div>
-            © {new Date().getFullYear()} ReviveX Autonomous Resilience Platform. All rights reserved.
+          {/* Col 3: Architecture & Security */}
+          <div className="space-y-4">
+            <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#00A8FF]">
+              Specifications
+            </h4>
+            <ul className="space-y-2.5 text-xs text-[#8AA4BE]">
+              <li>
+                <span className="hover:text-white cursor-pointer">100Hz Local Buffering</span>
+              </li>
+              <li>
+                <span className="hover:text-white cursor-pointer">SHA-256 Merkle Ledger</span>
+              </li>
+              <li>
+                <span className="hover:text-white cursor-pointer">Kyber-1024 Post-Quantum</span>
+              </li>
+              <li>
+                <span className="hover:text-white cursor-pointer">Sub-2.4s State Rollback</span>
+              </li>
+              <li>
+                <span className="hover:text-white cursor-pointer">LTI 1.3 Canvas / Moodle</span>
+              </li>
+            </ul>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1.5 text-[#00FF7F]">
-              <span className="h-2 w-2 rounded-full bg-[#00FF7F] animate-pulse" />
-              SYSTEM ACTIVE
-            </span>
+
+          {/* Col 4: Dispatch Newsletter */}
+          <div className="space-y-4">
+            <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#00A8FF]">
+              Stay Informed
+            </h4>
+            <p className="text-xs text-[#8AA4BE] leading-relaxed">
+              Subscribe to our monthly engineering bulletin on edge fault-tolerance and academic integrity.
+            </p>
+            <form onSubmit={handleSubscribe} className="space-y-2">
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  required
+                  placeholder="name@university.edu"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#0B192C] border border-[#1E3A5F] text-xs text-white placeholder-[#556B82] focus:outline-none focus:border-[#00A8FF]"
+                />
+                <button
+                  type="submit"
+                  className="btn-cyan !py-2.5 !px-4 !text-xs shrink-0 cursor-pointer"
+                >
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+              {subscribed && (
+                <div className="text-[11px] text-[#00A8FF] flex items-center gap-1 mt-1">
+                  <Check className="h-3.5 w-3.5" />
+                  <span>Subscribed successfully!</span>
+                </div>
+              )}
+            </form>
+          </div>
+
+        </div>
+      </div>
+
+      {/* Bottom Legal & Metrics Strip */}
+      <div className="border-t border-[#122B48] bg-[#050D17] py-6 px-4">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#556B82] font-mono">
+          <div>
+            &copy; {new Date().getFullYear()} ReviveX Resilience Platform. Capella CSL Architecture. All rights reserved.
+          </div>
+          <div className="flex items-center gap-6">
+            <span>SLA: 99.999%</span>
+            <span>•</span>
+            <span>ZERO DATA LOSS</span>
+            <span>•</span>
+            <span>POST-QUANTUM READY</span>
           </div>
         </div>
       </div>

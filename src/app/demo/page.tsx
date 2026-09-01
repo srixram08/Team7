@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Cpu, ArrowLeft, Activity, ShieldCheck } from "lucide-react";
+import { Cpu, ArrowLeft, Activity, ShieldCheck, Zap, ArrowRight } from "lucide-react";
+import { DottedLogo } from "@/components/ui/DottedLogo";
 import { SessionGrid } from "@/components/demo/SessionGrid";
 import { SessionDetailPanel } from "@/components/demo/SessionDetailPanel";
 import { ExplainableAuditCard } from "@/components/demo/ExplainableAuditCard";
@@ -27,14 +28,14 @@ export default function DemoPage() {
       timestamp: "20:44:01",
       type: "info",
       candidateId: "STU-84920",
-      message: "100Hz Telemetry buffer active. Checkpoint #1042-89B verified.",
+      message: "100Hz Telemetry buffer active. Checkpoint #1042-89B verified across 6 nodes.",
     },
     {
       id: "2",
       timestamp: "20:44:03",
       type: "warning",
       candidateId: "STU-84921",
-      message: "CPU pressure spike (89%) detected. ML risk score raised to 78%.",
+      message: "CPU pressure spike (89%) detected. ML risk score raised to 78%. Pre-crash snapshot committed.",
     },
     {
       id: "3",
@@ -100,18 +101,18 @@ export default function DemoPage() {
     const newLog1: LogEntry = {
       id: Date.now().toString(),
       timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
-      type: "error",
+      type: "critical",
       candidateId,
-      message: "[CRITICAL] Abrupt browser crash & socket disconnect detected!",
+      message: "CRITICAL: Candidate process killed unexpectedly. State snapshot delta verified.",
     };
-    setLogs((prev: LogEntry[]) => [newLog1, ...prev]);
+    setLogs((prev) => [newLog1, ...prev]);
 
-    // Step 2: After 800ms, freeze state snapshot & generate report
+    // Step 2: Simulate 2.4s AI State Recovery
     setTimeout(() => {
       const newReport: RecoveryReportData = {
         candidateId: selectedCandidate.id,
         candidateName: selectedCandidate.name,
-        failureReason: "Sudden Socket Drop & Browser Thread Crash",
+        failureReason: "Sudden Socket Drop & Browser Process Kill",
         confidenceScore: 99.4,
         checkpointId: selectedCandidate.lastCheckpointId,
         checkpointTime: new Date().toISOString().slice(11, 19) + " UTC",
@@ -120,78 +121,94 @@ export default function DemoPage() {
         hash: selectedCandidate.hash,
         blockNumber: 140289,
         reasoningSteps: [
-          "1. Telemetry Stream detected 84% packet loss spike at t-350ms.",
-          "2. ML Risk Model committed Checkpoint CHK-1042-89B immediately before disconnect.",
-          "3. Candidate re-established WebSocket handshake via Edge Cache node.",
-          "4. Session state restored seamlessly with cryptographic hash chain validation.",
+          "1. 100Hz Telemetry stream detected socket disconnect at t-350ms.",
+          "2. Local IndexedDB emergency snapshot committed before process crash.",
+          "3. Digital Twin shadow state verified with SHA-256 Merkle proof (0 bytes lost).",
+          "4. 2.42s State Rollback executed with zero exam interruptions.",
         ],
       };
+
       setReport(newReport);
+
+      // Restore candidate to stable
+      setCandidates((prev: CandidateSession[]) =>
+        prev.map((c: CandidateSession) =>
+          c.id === candidateId
+            ? { ...c, status: "stable", riskScore: 12, latency: 14, cpuLoad: 24 }
+            : c
+        )
+      );
 
       const newLog2: LogEntry = {
         id: (Date.now() + 1).toString(),
         timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
-        type: "success",
+        type: "info",
         candidateId,
-        message: "Explainable Rollback executed in 2.42s. Candidate state restored (0 Bytes lost).",
+        message: "SUCCESS: Explainable AI Rollback completed in 2.42s. 0 bytes lost.",
       };
-      setLogs((prev: LogEntry[]) => [newLog2, ...prev]);
-
-      // Step 3: Restore candidate status to stable
-      setCandidates((prev: CandidateSession[]) =>
-        prev.map((c: CandidateSession) =>
-          c.id === candidateId ? { ...c, status: "stable", riskScore: 14 } : c
-        )
-      );
+      setLogs((prev) => [newLog2, ...prev]);
       setIsTriggering(false);
-    }, 2400);
+    }, 2420);
   };
 
   return (
-    <div className="min-h-screen bg-[#05070A] text-[#E8FCEF] flex flex-col scanlines">
-      {/* Top Header Console Bar */}
-      <header className="border-b border-[#0A3D24] bg-[#0B120E] px-4 py-3 sm:px-6">
+    <div className="min-h-screen bg-[#F4F8FC] text-[#0E1E33] flex flex-col font-sans">
+      {/* Top Header Console */}
+      <header className="border-b border-[#122B48] bg-[#07111E] text-white px-4 py-3 sm:px-6 sticky top-0 z-40 shadow-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <Link
               href="/"
-              className="flex items-center gap-2 font-mono text-xs text-[#7FA98F] hover:text-[#00FF7F] transition-colors"
+              className="flex items-center gap-2 font-sans text-xs text-[#8AA4BE] hover:text-[#00A8FF] transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
               <span>Back to Overview</span>
             </Link>
 
-            <div className="h-4 w-px bg-[#0A3D24]" />
+            <div className="h-4 w-px bg-[#1E3A5F]" />
 
-            <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded border border-[#00FF7F]/40 bg-[#05070A]">
-                <Cpu className="h-4 w-4 text-[#00FF7F]" />
-              </div>
-              <span className="font-heading font-bold text-sm text-[#E8FCEF]">
-                AROEP MONITORING CONSOLE
-              </span>
+            <div className="flex items-center gap-2.5">
+              <DottedLogo size={26} />
+              <h1 className="font-heading font-bold text-sm text-white truncate max-w-[200px] sm:max-w-none">
+                CHAOS SIMULATION CONSOLE
+              </h1>
             </div>
           </div>
 
-          {/* System Metrics Readout */}
-          <div className="hidden md:flex items-center gap-6 font-mono text-xs text-[#7FA98F]">
-            <div className="flex items-center gap-2">
-              <Activity className="h-3.5 w-3.5 text-[#00FF7F] animate-pulse" />
-              <span>SYSTEM HEALTH: <strong className="text-[#00FF7F]">99.999%</strong></span>
-            </div>
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="h-3.5 w-3.5 text-[#00FF7F]" />
-              <span>ROLLBACKS PREVENTED TODAY: <strong className="text-[#00FF7F]">1,482</strong></span>
-            </div>
+          <div className="flex items-center gap-3">
+            <span className="flex h-2 w-2 rounded-full bg-[#00A8FF] animate-pulse" />
+            <span className="font-mono text-xs font-bold text-[#00A8FF]">
+              100Hz STREAM ACTIVE
+            </span>
           </div>
         </div>
       </header>
 
-      {/* Main Console Workspace */}
-      <div className="flex-1 mx-auto max-w-7xl w-full p-4 sm:p-6 space-y-4">
-        {/* Top 3-Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-auto lg:h-[620px]">
-          {/* Left Pane: Examinee Sessions List */}
+      {/* Main Console Layout */}
+      <main className="flex-1 mx-auto max-w-7xl w-full p-4 sm:p-6 space-y-6">
+        
+        {/* Title area */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+          <div>
+            <div className="font-mono text-xs font-bold text-[#00A8FF] uppercase tracking-wider">
+              CHAOS ENGINEERING TESTBED
+            </div>
+            <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-[#0B192C] mt-0.5">
+              Simulated Failure & State Recovery Testing
+            </h2>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Link href="/student" className="btn-cyan !py-2.5 !px-5 !text-xs">
+              <span>Open Student Pod</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </div>
+
+        {/* 3-Column Interactive Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-auto lg:h-[650px]">
+          {/* Col 1: Candidate Sessions Grid */}
           <div className="lg:col-span-3 min-h-[460px] lg:min-h-0 lg:h-full">
             <SessionGrid
               candidates={candidates}
@@ -200,25 +217,28 @@ export default function DemoPage() {
             />
           </div>
 
-          {/* Center Pane: Candidate Telemetry Detail */}
-          <div className="lg:col-span-6 min-h-[480px] lg:min-h-0 lg:h-full">
+          {/* Col 2: Live Telemetry & Chaos Trigger */}
+          <div className="lg:col-span-5 min-h-[480px] lg:min-h-0 lg:h-full">
             <SessionDetailPanel
               candidate={selectedCandidate}
-              telemetryData={telemetry}
+              telemetry={telemetry}
               onTriggerFailure={handleTriggerFailure}
               isTriggering={isTriggering}
             />
           </div>
 
-          {/* Right Pane: Explainable Recovery Report */}
-          <div className="lg:col-span-3 min-h-[460px] lg:min-h-0 lg:h-full">
-            <ExplainableAuditCard report={report} isSimulating={isTriggering} />
+          {/* Col 3: Explainable Audit & Live Behavioral Logs */}
+          <div className="lg:col-span-4 min-h-[460px] lg:min-h-0 lg:h-full flex flex-col gap-4">
+            <div className="flex-1 min-h-0">
+              <ExplainableAuditCard report={report} />
+            </div>
+            <div className="h-[230px] min-h-[230px]">
+              <BehavioralLogStream logs={logs} />
+            </div>
           </div>
         </div>
 
-        {/* Bottom Pane: Behavioral Log Stream */}
-        <BehavioralLogStream logs={logs} />
-      </div>
+      </main>
     </div>
   );
 }
