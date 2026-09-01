@@ -9,6 +9,7 @@ declare namespace JSX {
 declare module "react" {
   export type ReactNode = any;
   export type FC<T = any> = (props: T) => any;
+  export const Suspense: FC<{ fallback?: any; children?: any }>;
   export function useState<T>(initial: T | (() => T)): [T, (val: T | ((prev: T) => T)) => void];
   export function useEffect(effect: () => void | (() => void), deps?: any[]): void;
   export function useRef<T = any>(initial?: T): { current: T };
@@ -16,7 +17,8 @@ declare module "react" {
   export function useMemo<T>(fn: () => T, deps: any[]): T;
   export function createContext<T>(defaultValue: T): any;
   export function useContext<T>(context: any): T;
-  export default any;
+  const React: any;
+  export default React;
 }
 
 declare module "react/jsx-runtime" {
@@ -104,7 +106,6 @@ declare module "lucide-react" {
   export const CheckCheck: FC<IconProps>;
   export const HelpCircle: FC<IconProps>;
   export const Info: FC<IconProps>;
-  export const [key: string]: FC<IconProps>;
 }
 
 declare module "framer-motion" {
@@ -127,7 +128,14 @@ declare module "recharts" {
 }
 
 declare module "three" {
-  export const [key: string]: any;
+  export const Mesh: any;
+  export const BoxGeometry: any;
+  export const MeshStandardMaterial: any;
+  export const Group: any;
+  export const Vector3: any;
+  export const Color: any;
+  const Three: any;
+  export default Three;
 }
 
 declare module "@react-three/fiber" {
