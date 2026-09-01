@@ -1,15 +1,15 @@
 "use client";
 
-import React from "react";
+import React, { ReactNode } from "react";
 import { motion } from "framer-motion";
 
 interface GlowButtonProps {
-  children: React.ReactNode;
+  children: ReactNode;
   variant?: "primary" | "secondary" | "danger" | "warning" | "outline";
   size?: "sm" | "md" | "lg";
   onClick?: () => void;
   className?: string;
-  icon?: React.ReactNode;
+  icon?: ReactNode;
   disabled?: boolean;
   type?: "button" | "submit" | "reset";
   id?: string;

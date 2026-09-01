@@ -6,6 +6,15 @@ declare namespace JSX {
   }
 }
 
+declare namespace React {
+  export type ReactNode = any;
+  export type FC<T = any> = (props: T) => any;
+  export type ComponentType<T = any> = any;
+  export type CSSProperties = any;
+  export type HTMLAttributes<T = any> = any;
+  export type ButtonHTMLAttributes<T = any> = any;
+}
+
 declare module "react" {
   export type ReactNode = any;
   export type FC<T = any> = (props: T) => any;
