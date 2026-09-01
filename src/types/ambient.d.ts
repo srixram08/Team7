@@ -185,6 +185,13 @@ declare module "lucide-react" {
   export const PlayCircle: any;
   export const AlertCircle: any;
   export const LogOut: any;
+  export const GraduationCap: any;
+  export const FileCode: any;
+  export const Send: any;
+  export const Code: any;
+  export const UserCheck: any;
+  export const LogIn: any;
+  export const Menu: any;
 }
 
 declare module "framer-motion" {
