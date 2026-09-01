@@ -44,7 +44,7 @@ export default function LoginPage() {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <GlassCard className="py-8 px-6 shadow-xl sm:px-10 border-[#D6E5D4]">
+        <div className="rounded-3xl border border-[#D6E5D4] bg-white py-8 px-6 shadow-xl sm:px-10">
           
           {/* 2 Distinct Role Login Tabs */}
           <div className="flex rounded-xl bg-[#F8FAF8] border border-[#D6E5D4] p-1 mb-6 gap-1">
@@ -119,7 +119,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <GlowButton variant="primary" size="md" type="submit" className="w-full">
+              <GlowButton variant="primary" size="md" type="submit" className="w-full justify-center">
                 {activeRole === "student"
                   ? "Sign In to Student Examination Dashboard"
                   : "Sign In to Platform Owner Control Center"}
@@ -130,7 +130,7 @@ export default function LoginPage() {
           <div className="mt-6 border-t border-[#D6E5D4] pt-6 text-center text-xs text-[#586B56]">
             <p className="font-semibold">Protected by 100Hz Telemetry & SHA-256 Hash Chain</p>
           </div>
-        </GlassCard>
+        </div>
       </div>
     </div>
   );

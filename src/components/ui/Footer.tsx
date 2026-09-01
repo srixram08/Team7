@@ -10,13 +10,13 @@ export const Footer: React.FC = () => {
           {/* Brand Info */}
           <div className="space-y-4 lg:col-span-1">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#00FF7F]/40 bg-[#0B120E]">
-                <Cpu className="h-5 w-5 text-[#00FF7F]" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#2E5B28] text-white shadow-sm">
+                <Zap className="h-5 w-5 fill-current" />
               </div>
-              <span className="font-heading text-lg font-bold text-[#E8FCEF]">AROEP</span>
+              <span className="font-heading text-lg font-bold text-[#E8FCEF]">ReviveX</span>
             </div>
             <p className="text-xs leading-relaxed text-[#7FA98F]">
-              Autonomous Resilient Online Examination Platform — An AI-driven exam environment with predictive checkpointing, digital twin mirroring, and explainable instant rollback.
+              Autonomous Resilient Online Examination Platform — Continuous risk-adaptive telemetry monitoring, verified state consistency, and explainable instant rollback.
             </p>
             <div className="flex items-center gap-2 text-xs font-mono text-[#00FF7F]">
               <Activity className="h-4 w-4" />
@@ -31,19 +31,19 @@ export const Footer: React.FC = () => {
             </h4>
             <ul className="space-y-2 text-xs font-mono">
               <li className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#00FF7F]" /> Next.js 14 App Router + TS
+                <span className="h-1.5 w-1.5 rounded-full bg-[#00FF7F]" /> Next.js App Router + TypeScript
               </li>
               <li className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#00FF7F]" /> Three.js / React Three Fiber
+                <span className="h-1.5 w-1.5 rounded-full bg-[#00FF7F]" /> Three.js & React Three Fiber
               </li>
               <li className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#00FF7F]" /> Framer Motion + GSAP Shaders
+                <span className="h-1.5 w-1.5 rounded-full bg-[#00FF7F]" /> IndexedDB + Local State Engine
               </li>
               <li className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#00FF7F]" /> SHA-256 Hash Chain Ledger
+                <span className="h-1.5 w-1.5 rounded-full bg-[#00FF7F]" /> SHA-256 State Delta Hash Chain
               </li>
               <li className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#00FF7F]" /> 100Hz Telemetry Monitoring
+                <span className="h-1.5 w-1.5 rounded-full bg-[#00FF7F]" /> 100Hz Telemetry Stream Monitor
               </li>
             </ul>
           </div>
@@ -55,28 +55,28 @@ export const Footer: React.FC = () => {
             </h4>
             <ul className="space-y-2 text-xs">
               <li>
-                <a href="#how-it-works" className="hover:text-[#00FF7F] transition-colors">
-                  Predictive State Checkpointing
-                </a>
+                <Link href="/student" className="hover:text-[#00FF7F] transition-colors">
+                  Student Examination Portal
+                </Link>
               </li>
               <li>
-                <a href="#engines" className="hover:text-[#00FF7F] transition-colors">
-                  Digital Twin Mirroring Engine
-                </a>
+                <Link href="/dashboard" className="hover:text-[#00FF7F] transition-colors">
+                  Proctor Monitoring Console
+                </Link>
               </li>
               <li>
-                <a href="#explainability" className="hover:text-[#00FF7F] transition-colors">
-                  Explainable AI Recovery Audit
-                </a>
+                <Link href="/admin" className="hover:text-[#00FF7F] transition-colors">
+                  Admin Failover & Hash Verifier
+                </Link>
               </li>
               <li>
-                <a href="#architecture" className="hover:text-[#00FF7F] transition-colors">
-                  Graceful Degradation Ladder
-                </a>
+                <Link href="/architecture" className="hover:text-[#00FF7F] transition-colors">
+                  System Architecture & 3D Spec
+                </Link>
               </li>
               <li>
-                <Link href="/demo" className="hover:text-[#00FF7F] transition-colors">
-                  Interactive Demo Console
+                <Link href="/login" className="hover:text-[#00FF7F] transition-colors">
+                  Account Sign In
                 </Link>
               </li>
             </ul>
@@ -85,12 +85,12 @@ export const Footer: React.FC = () => {
           {/* Trust & Hackathon Credits */}
           <div className="space-y-4">
             <h4 className="font-mono text-xs uppercase tracking-widest text-[#E8FCEF]">
-              Portfolio & Hackathon Showcase
+              Resilience & Integrity Spec
             </h4>
             <div className="rounded-lg border border-[#0A3D24] bg-[#0B120E] p-4 text-xs">
               <div className="flex items-center gap-2 text-[#00FF7F] font-mono mb-2">
                 <ShieldCheck className="h-4 w-4" />
-                <span>FAULT-TOLERANT SPEC</span>
+                <span>FAULT-TOLERANT ARCHITECTURE</span>
               </div>
               <p className="text-[11px] text-[#7FA98F]">
                 Engineered to demonstrate sub-3-second recovery and zero silent data loss under catastrophic network drops & crash conditions.
@@ -101,7 +101,7 @@ export const Footer: React.FC = () => {
 
         <div className="mt-12 border-t border-[#0A3D24] pt-6 flex flex-col sm:flex-row items-center justify-between text-xs font-mono text-[#7FA98F] gap-4">
           <div>
-            © {new Date().getFullYear()} AROEP Deep-Tech Architecture. Built for high-stakes digital resilience.
+            © {new Date().getFullYear()} ReviveX Autonomous Resilience Platform. All rights reserved.
           </div>
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5 text-[#00FF7F]">

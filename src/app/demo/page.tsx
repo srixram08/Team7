@@ -191,9 +191,9 @@ export default function DemoPage() {
       {/* Main Console Workspace */}
       <div className="flex-1 mx-auto max-w-7xl w-full p-4 sm:p-6 space-y-4">
         {/* Top 3-Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[580px]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-auto lg:h-[620px]">
           {/* Left Pane: Examinee Sessions List */}
-          <div className="lg:col-span-3 h-full">
+          <div className="lg:col-span-3 min-h-[460px] lg:min-h-0 lg:h-full">
             <SessionGrid
               candidates={candidates}
               selectedCandidateId={selectedCandidateId}
@@ -202,7 +202,7 @@ export default function DemoPage() {
           </div>
 
           {/* Center Pane: Candidate Telemetry Detail */}
-          <div className="lg:col-span-6 h-full">
+          <div className="lg:col-span-6 min-h-[480px] lg:min-h-0 lg:h-full">
             <SessionDetailPanel
               candidate={selectedCandidate}
               telemetryData={telemetry}
@@ -212,7 +212,7 @@ export default function DemoPage() {
           </div>
 
           {/* Right Pane: Explainable Recovery Report */}
-          <div className="lg:col-span-3 h-full">
+          <div className="lg:col-span-3 min-h-[460px] lg:min-h-0 lg:h-full">
             <ExplainableAuditCard report={report} isSimulating={isTriggering} />
           </div>
         </div>

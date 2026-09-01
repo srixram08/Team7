@@ -9,7 +9,7 @@ export const Navbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navLinks = [
-    { label: "Proctor Console", href: "/demo", icon: <Terminal className="h-3.5 w-3.5" /> },
+    { label: "Proctor Console", href: "/dashboard", icon: <Terminal className="h-3.5 w-3.5" /> },
     { label: "Student Exam", href: "/student", icon: <UserCheck className="h-3.5 w-3.5" /> },
     { label: "Admin Hub", href: "/admin", icon: <Server className="h-3.5 w-3.5" /> },
     { label: "Architecture Spec", href: "/architecture", icon: <Layers className="h-3.5 w-3.5" /> },

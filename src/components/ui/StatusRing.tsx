@@ -46,13 +46,13 @@ export const StatusRing: React.FC<StatusRingProps> = ({
   const current = statusConfig[status];
 
   return (
-    <div className="inline-flex items-center gap-2">
-      <span className="relative flex">
+    <div className="inline-flex items-center gap-2 shrink-0">
+      <span className={`relative flex shrink-0 ${sizeMap[size]}`}>
         <span
           className={`animate-ping absolute inline-flex h-full w-full rounded-full ${current.ping} opacity-75`}
         />
         <span
-          className={`relative inline-flex rounded-full ${sizeMap[size]} ${current.bg} ${current.shadow}`}
+          className={`relative inline-flex rounded-full h-full w-full ${current.bg} ${current.shadow}`}
         />
       </span>
       {showLabel && (

@@ -199,59 +199,59 @@ function DashboardContent() {
               </div>
 
               {/* Executive Metrics Overview Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <GlassCard className="p-4 flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-[#E8F3E7] border border-[#D6E5D4] flex items-center justify-center text-2xl">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="rounded-2xl border border-[#D6E5D4] bg-white p-4 flex items-center gap-4 shadow-sm hover:border-[#4E8B46] hover:shadow-md transition-all">
+                  <div className="h-12 w-12 rounded-xl bg-[#E8F3E7] border border-[#D6E5D4] flex items-center justify-center text-2xl shrink-0">
                     🛡️
                   </div>
                   <div>
                     <div className="font-heading text-xl font-extrabold text-[#162215]">5 Active</div>
                     <div className="text-xs font-semibold text-[#586B56]">Monitored Candidate Sessions</div>
                   </div>
-                </GlassCard>
+                </div>
 
-                <GlassCard className="p-4 flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-[#E8F3E7] border border-[#D6E5D4] flex items-center justify-center text-2xl">
+                <div className="rounded-2xl border border-[#D6E5D4] bg-white p-4 flex items-center gap-4 shadow-sm hover:border-[#4E8B46] hover:shadow-md transition-all">
+                  <div className="h-12 w-12 rounded-xl bg-[#E8F3E7] border border-[#D6E5D4] flex items-center justify-center text-2xl shrink-0">
                     ⚡
                   </div>
                   <div>
                     <div className="font-heading text-xl font-extrabold text-[#2E5B28]">2.42s</div>
                     <div className="text-xs font-semibold text-[#586B56]">Avg Rollback Speed</div>
                   </div>
-                </GlassCard>
+                </div>
 
-                <GlassCard className="p-4 flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-[#E8F3E7] border border-[#D6E5D4] flex items-center justify-center text-2xl">
+                <div className="rounded-2xl border border-[#D6E5D4] bg-white p-4 flex items-center gap-4 shadow-sm hover:border-[#4E8B46] hover:shadow-md transition-all">
+                  <div className="h-12 w-12 rounded-xl bg-[#E8F3E7] border border-[#D6E5D4] flex items-center justify-center text-2xl shrink-0">
                     🌐
                   </div>
                   <div>
                     <div className="font-heading text-xl font-extrabold text-[#162215]">14ms</div>
                     <div className="text-xs font-semibold text-[#586B56]">Global Edge Mesh Latency</div>
                   </div>
-                </GlassCard>
+                </div>
 
-                <GlassCard className="p-4 flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-[#E8F3E7] border border-[#D6E5D4] flex items-center justify-center text-2xl">
+                <div className="rounded-2xl border border-[#D6E5D4] bg-white p-4 flex items-center gap-4 shadow-sm hover:border-[#4E8B46] hover:shadow-md transition-all">
+                  <div className="h-12 w-12 rounded-xl bg-[#E8F3E7] border border-[#D6E5D4] flex items-center justify-center text-2xl shrink-0">
                     🔒
                   </div>
                   <div>
                     <div className="font-heading text-xl font-extrabold text-[#2E5B28]">99.999%</div>
                     <div className="text-xs font-semibold text-[#586B56]">Data Consistency Match</div>
                   </div>
-                </GlassCard>
+                </div>
               </div>
             </div>
 
             {/* Main 3-Column Proctor Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[580px]">
-              <div className="lg:col-span-3 h-full">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-auto lg:h-[620px]">
+              <div className="lg:col-span-3 min-h-[460px] lg:min-h-0 lg:h-full">
                 <SessionGrid
                   candidates={candidates}
                   selectedCandidateId={selectedCandidateId}
                   onSelectCandidate={setSelectedCandidateId}
                 />
               </div>
-              <div className="lg:col-span-6 h-full">
+              <div className="lg:col-span-6 min-h-[480px] lg:min-h-0 lg:h-full">
                 <SessionDetailPanel
                   candidate={selectedCandidate}
                   telemetryData={telemetry}
@@ -259,7 +259,7 @@ function DashboardContent() {
                   isTriggering={isTriggering}
                 />
               </div>
-              <div className="lg:col-span-3 h-full">
+              <div className="lg:col-span-3 min-h-[460px] lg:min-h-0 lg:h-full">
                 <ExplainableAuditCard report={report} isSimulating={isTriggering} />
               </div>
             </div>
