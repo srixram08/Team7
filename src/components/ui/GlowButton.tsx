@@ -15,7 +15,7 @@ interface GlowButtonProps {
   id?: string;
 }
 
-export const GlowButton: React.FC<GlowButtonProps> = ({
+export const GlowButton = ({
   children,
   variant = "primary",
   size = "md",
@@ -25,7 +25,7 @@ export const GlowButton: React.FC<GlowButtonProps> = ({
   disabled = false,
   type = "button",
   id,
-}) => {
+}: GlowButtonProps) => {
   const sizeClasses: Record<"sm" | "md" | "lg", string> = {
     sm: "px-4 py-2 text-xs font-semibold",
     md: "px-6 py-2.5 text-sm font-bold",

@@ -8,11 +8,11 @@ interface StatusRingProps {
   showLabel?: boolean;
 }
 
-export const StatusRing: React.FC<StatusRingProps> = ({
+export const StatusRing = ({
   status,
   size = "md",
   showLabel = false,
-}) => {
+}: StatusRingProps) => {
   const sizeMap: Record<"sm" | "md" | "lg", string> = {
     sm: "h-2 w-2",
     md: "h-3 w-3",
