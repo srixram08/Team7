@@ -84,15 +84,15 @@ export default function DemoPage() {
   }, []);
 
   const selectedCandidate =
-    candidates.find((c) => c.id === selectedCandidateId) || candidates[0];
+    candidates.find((c: CandidateSession) => c.id === selectedCandidateId) || candidates[0];
 
   // Trigger Simulated Failure Function
   const handleTriggerFailure = (candidateId: string) => {
     setIsTriggering(true);
 
     // Step 1: Set candidate status to recovering
-    setCandidates((prev) =>
-      prev.map((c) =>
+    setCandidates((prev: CandidateSession[]) =>
+      prev.map((c: CandidateSession) =>
         c.id === candidateId ? { ...c, status: "recovering", riskScore: 94 } : c
       )
     );
@@ -104,7 +104,7 @@ export default function DemoPage() {
       candidateId,
       message: "[CRITICAL] Abrupt browser crash & socket disconnect detected!",
     };
-    setLogs((prev) => [newLog1, ...prev]);
+    setLogs((prev: LogEntry[]) => [newLog1, ...prev]);
 
     // Step 2: After 800ms, freeze state snapshot & generate report
     setTimeout(() => {
@@ -135,15 +135,14 @@ export default function DemoPage() {
         candidateId,
         message: "Explainable Rollback executed in 2.42s. Candidate state restored (0 Bytes lost).",
       };
-      setLogs((prev) => [newLog2, ...prev]);
+      setLogs((prev: LogEntry[]) => [newLog2, ...prev]);
 
       // Step 3: Restore candidate status to stable
-      setCandidates((prev) =>
-        prev.map((c) =>
+      setCandidates((prev: CandidateSession[]) =>
+        prev.map((c: CandidateSession) =>
           c.id === candidateId ? { ...c, status: "stable", riskScore: 14 } : c
         )
       );
-
       setIsTriggering(false);
     }, 2400);
   };

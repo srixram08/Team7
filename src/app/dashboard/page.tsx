@@ -98,12 +98,12 @@ function DashboardContent() {
     },
   ]);
 
-  const selectedCandidate = candidates.find((c) => c.id === selectedCandidateId) || candidates[0];
+  const selectedCandidate = candidates.find((c: CandidateSession) => c.id === selectedCandidateId) || candidates[0];
 
   const handleTriggerFailure = (candidateId: string) => {
     setIsTriggering(true);
-    setCandidates((prev) =>
-      prev.map((c) => (c.id === candidateId ? { ...c, status: "recovering", riskScore: 94 } : c))
+    setCandidates((prev: CandidateSession[]) =>
+      prev.map((c: CandidateSession) => (c.id === candidateId ? { ...c, status: "recovering", riskScore: 94 } : c))
     );
 
     setTimeout(() => {
@@ -125,8 +125,8 @@ function DashboardContent() {
         ],
       };
       setReport(newReport);
-      setCandidates((prev) =>
-        prev.map((c) => (c.id === candidateId ? { ...c, status: "stable", riskScore: 14 } : c))
+      setCandidates((prev: CandidateSession[]) =>
+        prev.map((c: CandidateSession) => (c.id === candidateId ? { ...c, status: "stable", riskScore: 14 } : c))
       );
       setIsTriggering(false);
     }, 2400);
