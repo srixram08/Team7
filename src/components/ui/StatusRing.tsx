@@ -13,13 +13,16 @@ export const StatusRing: React.FC<StatusRingProps> = ({
   size = "md",
   showLabel = false,
 }) => {
-  const sizeMap = {
+  const sizeMap: Record<"sm" | "md" | "lg", string> = {
     sm: "h-2 w-2",
     md: "h-3 w-3",
     lg: "h-4 w-4",
   };
 
-  const statusConfig = {
+  const statusConfig: Record<
+    SessionStatus,
+    { bg: string; ping: string; shadow: string; label: string; textColor: string }
+  > = {
     stable: {
       bg: "bg-[#00FF7F]",
       ping: "bg-[#00FF7F]",

@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { Cpu, ShieldCheck, Activity } from "lucide-react";
+import { Cpu, ShieldCheck, Activity, Zap } from "lucide-react";
 
 export const Footer: React.FC = () => {
   return (

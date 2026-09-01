@@ -26,13 +26,13 @@ export const GlowButton: React.FC<GlowButtonProps> = ({
   type = "button",
   id,
 }) => {
-  const sizeClasses = {
+  const sizeClasses: Record<"sm" | "md" | "lg", string> = {
     sm: "px-4 py-2 text-xs font-semibold",
     md: "px-6 py-2.5 text-sm font-bold",
     lg: "px-7 py-3 text-base font-bold",
   };
 
-  const variantClasses = {
+  const variantClasses: Record<"primary" | "secondary" | "danger" | "warning" | "outline", string> = {
     primary:
       "bg-[#2E5B28] text-white shadow-md hover:bg-[#23461E] border border-[#2E5B28]",
     secondary:
