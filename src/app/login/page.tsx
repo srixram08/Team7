@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { 
   ArrowLeft, 
   ShieldCheck, 
@@ -10,30 +10,70 @@ import {
   User, 
   BookOpen, 
   Settings, 
-  ArrowRight,
-  Sparkles,
-  CheckCircle2,
-  Cpu
+  ArrowRight, 
+  Sparkles, 
+  CheckCircle2, 
+  Cpu,
+  Play,
+  GraduationCap
 } from "lucide-react";
 import { DottedLogo } from "@/components/ui/DottedLogo";
 import { Lightfall } from "@/components/ui/Lightfall";
-import { STUDENTS_DATA } from "@/lib/examStore";
+import { STUDENTS_DATA, getStoredStudents, StudentProfile } from "@/lib/examStore";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
-  const [activeRole, setActiveRole] = useState<"student" | "teacher" | "admin" | "proctor">("student");
+  const searchParams = useSearchParams();
+
+  const roleParam = searchParams.get("role") as "student" | "teacher" | "admin" | "proctor" | null;
+  const intentParam = searchParams.get("intent");
+  const studentParam = searchParams.get("id");
+
+  const [activeRole, setActiveRole] = useState<"student" | "teacher" | "admin" | "proctor">(
+    roleParam || "student"
+  );
   
-  // Student selection
-  const [selectedStudentId, setSelectedStudentId] = useState("STU-84920");
+  // Dynamic Students Roster (includes candidates enrolled by teacher)
+  const [students, setStudents] = useState<Record<string, StudentProfile>>(STUDENTS_DATA);
+
+  // Student selection (Alex Chen by default, or URL parameter)
+  const [selectedStudentId, setSelectedStudentId] = useState(
+    studentParam && STUDENTS_DATA[studentParam] ? studentParam : "STU-84920"
+  );
 
   // Credentials form
-  const [email, setEmail] = useState("alex.chen@stanford.edu");
+  const [email, setEmail] = useState(
+    STUDENTS_DATA[selectedStudentId]?.email || "alex.chen@stanford.edu"
+  );
   const [password, setPassword] = useState("••••••••••••");
+
+  useEffect(() => {
+    const loaded = getStoredStudents();
+    setStudents(loaded);
+    if (studentParam && loaded[studentParam]) {
+      setSelectedStudentId(studentParam);
+      setEmail(loaded[studentParam].email);
+    }
+
+    const handleSync = () => {
+      const updated = getStoredStudents();
+      setStudents(updated);
+    };
+    window.addEventListener("storage", handleSync);
+    return () => window.removeEventListener("storage", handleSync);
+  }, [studentParam]);
+
+  useEffect(() => {
+    if (roleParam) {
+      setActiveRole(roleParam);
+    }
+  }, [roleParam]);
 
   const handleRoleChange = (role: "student" | "teacher" | "admin" | "proctor") => {
     setActiveRole(role);
     if (role === "student") {
-      setEmail(STUDENTS_DATA[selectedStudentId]?.email || "alex.chen@stanford.edu");
+      const curr = students[selectedStudentId] || STUDENTS_DATA[selectedStudentId];
+      setEmail(curr?.email || "alex.chen@stanford.edu");
     } else if (role === "teacher") {
       setEmail("robert.sterling@university.edu");
     } else if (role === "admin") {
@@ -45,7 +85,8 @@ export default function LoginPage() {
 
   const handleStudentSelect = (stuId: string) => {
     setSelectedStudentId(stuId);
-    setEmail(STUDENTS_DATA[stuId]?.email || "");
+    const stu = students[stuId] || STUDENTS_DATA[stuId];
+    setEmail(stu?.email || "");
   };
 
   const handleLoginSubmit = (e: React.FormEvent) => {
@@ -60,6 +101,9 @@ export default function LoginPage() {
       router.push("/dashboard?userId=PROCTOR-01");
     }
   };
+
+  const currentStudent = students[selectedStudentId] || STUDENTS_DATA[selectedStudentId] || STUDENTS_DATA["STU-84920"];
+  const isExamIntent = intentParam === "exam";
 
   return (
     <div className="min-h-screen bg-[#07111E] text-white flex flex-col justify-between font-sans selection:bg-[#00A8FF] selection:text-white relative overflow-hidden">
@@ -116,6 +160,24 @@ export default function LoginPage() {
       <main className="max-w-xl mx-auto w-full px-4 sm:px-6 py-8 z-10">
         <div className="rounded-3xl border border-[#1E3A5F] bg-[#0B192C]/90 backdrop-blur-xl p-8 sm:p-10 shadow-2xl space-y-6">
           
+          {/* Exam Pod Launch Initialized Notification Banner */}
+          {isExamIntent && (
+            <div className="p-4 rounded-2xl bg-[#00A8FF]/15 border border-[#00A8FF]/40 flex items-center gap-3.5 text-left animate-in fade-in slide-in-from-top-2 shadow-lg">
+              <div className="h-10 w-10 rounded-xl bg-[#00A8FF] text-[#07111E] flex items-center justify-center font-bold shrink-0 shadow-md">
+                <Play className="h-5 w-5 fill-current" />
+              </div>
+              <div>
+                <div className="font-heading font-extrabold text-sm text-white flex items-center gap-2">
+                  <span>Exam Pod Launch Initialized</span>
+                  <span className="h-2 w-2 rounded-full bg-[#00A8FF] animate-ping" />
+                </div>
+                <div className="text-xs text-[#8AA4BE] mt-0.5">
+                  Select your preferred candidate profile below to launch your exam session pod.
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Title */}
           <div className="text-center space-y-2">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-[#00A8FF]/30 bg-[#00A8FF]/10 px-3.5 py-1 text-xs font-mono font-bold text-[#00A8FF]">
@@ -126,7 +188,9 @@ export default function LoginPage() {
               Institutional Access Portal
             </h1>
             <p className="text-xs sm:text-sm text-[#8AA4BE]">
-              Select your academic role to proceed with verified session keys.
+              {isExamIntent
+                ? "Choose your student persona to enter the autonomous exam environment."
+                : "Select your academic role to proceed with verified session keys."}
             </p>
           </div>
 
@@ -188,31 +252,47 @@ export default function LoginPage() {
           {/* Student Persona Picker (When role === student) */}
           {activeRole === "student" && (
             <div className="space-y-3 border-t border-[#1E3A5F] pt-4">
-              <label className="block text-xs font-mono text-[#00A8FF] uppercase tracking-wider font-bold">
-                Select 1 of 3 Demo Student Candidates:
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-mono text-[#00A8FF] uppercase tracking-wider font-bold">
+                  Choose Preferred Candidate Profile:
+                </label>
+                <span className="text-[10px] font-mono text-[#8AA4BE]">
+                  Selected: <strong className="text-white">{currentStudent.name}</strong>
+                </span>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                {Object.values(STUDENTS_DATA).map((stu) => {
+                {Object.values(students).map((stu) => {
                   const isSelected = selectedStudentId === stu.id;
                   return (
                     <button
                       key={stu.id}
                       type="button"
                       onClick={() => handleStudentSelect(stu.id)}
-                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
                         isSelected
-                          ? "border-[#00A8FF] bg-[#00A8FF]/15 text-white ring-1 ring-[#00A8FF]"
-                          : "border-[#1E3A5F] bg-[#07111E] text-[#8AA4BE] hover:border-[#00A8FF]"
+                          ? "border-[#00A8FF] bg-[#00A8FF]/20 text-white ring-2 ring-[#00A8FF] shadow-md"
+                          : "border-[#1E3A5F] bg-[#07111E] text-[#8AA4BE] hover:border-[#00A8FF] hover:bg-[#07111E]/80"
                       }`}
                     >
-                      <div className="font-heading font-bold text-xs text-white">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="h-7 w-7 rounded-lg bg-[#0B192C] text-white flex items-center justify-center font-bold text-xs border border-[#1E3A5F]">
+                          {stu.avatarInitials}
+                        </div>
+                        <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                          isSelected ? "bg-[#00A8FF] text-[#07111E]" : "bg-[#1E3A5F] text-[#8AA4BE]"
+                        }`}>
+                          {stu.gpa}
+                        </span>
+                      </div>
+                      <div className="font-heading font-bold text-xs text-white truncate">
                         {stu.name}
                       </div>
                       <div className="text-[10px] font-mono text-[#00A8FF]">
                         {stu.candidateNumber}
                       </div>
-                      <div className="text-[9px] text-[#8AA4BE] truncate">
-                        {stu.university.split(" ")[0]}
+                      <div className="text-[10px] text-[#8AA4BE] truncate mt-0.5">
+                        {stu.university.split(" ")[0]} • {stu.department.split(" ")[0]}
                       </div>
                     </button>
                   );
@@ -231,7 +311,7 @@ export default function LoginPage() {
                 type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-[#1E3A5F] bg-[#07111E] p-3 text-xs sm:text-sm text-white focus:border-[#00A8FF] focus:outline-none"
+                className="w-full rounded-xl border border-[#1E3A5F] bg-[#07111E] p-3.5 text-xs sm:text-sm text-white focus:border-[#00A8FF] focus:outline-none"
                 placeholder="name@university.edu"
               />
             </div>
@@ -244,16 +324,26 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-[#1E3A5F] bg-[#07111E] p-3 text-xs sm:text-sm text-white focus:border-[#00A8FF] focus:outline-none"
+                className="w-full rounded-xl border border-[#1E3A5F] bg-[#07111E] p-3.5 text-xs sm:text-sm text-white focus:border-[#00A8FF] focus:outline-none"
               />
             </div>
 
             <button
               type="submit"
-              className="btn-cyan w-full justify-center !py-3.5 !text-xs uppercase tracking-wider font-bold cursor-pointer mt-2"
+              className="btn-cyan w-full justify-center !py-4 !text-xs uppercase tracking-wider font-bold cursor-pointer mt-3 shadow-lg"
             >
-              <span>Authenticate & Enter {activeRole.toUpperCase()} Hub</span>
-              <ArrowRight className="h-4 w-4" />
+              {activeRole === "student" ? (
+                <>
+                  <Play className="h-4 w-4 fill-current" />
+                  <span>Launch Exam Pod as {currentStudent.name}</span>
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              ) : (
+                <>
+                  <span>Authenticate & Enter {activeRole.toUpperCase()} Hub</span>
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
             </button>
           </form>
 
@@ -266,5 +356,17 @@ export default function LoginPage() {
       </footer>
 
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#07111E]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00A8FF]"></div>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }

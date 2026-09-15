@@ -22,7 +22,11 @@ import {
   Database,
   Trash2,
   ArrowRight,
-  LogOut
+  LogOut,
+  UserPlus,
+  GraduationCap,
+  Award,
+  X
 } from "lucide-react";
 import { DottedLogo } from "@/components/ui/DottedLogo";
 import { DotField } from "@/components/ui/DotField";
@@ -30,16 +34,29 @@ import {
   Exam,
   ExamQuestion,
   SecurityProtocol,
+  StudentProfile,
   getStoredExams,
   saveExam,
+  getStoredStudents,
+  saveStudent,
   STUDENTS_DATA
 } from "@/lib/examStore";
 
 export default function TeacherPortalPage() {
   const router = useRouter();
   const [exams, setExams] = useState<Exam[]>([]);
-  const [activeTab, setActiveTab] = useState<"manage" | "create">("manage");
+  const [students, setStudents] = useState<Record<string, StudentProfile>>(STUDENTS_DATA);
+  const [activeTab, setActiveTab] = useState<"manage" | "create" | "students">("manage");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
+
+  // New Student Form State
+  const [newStudentName, setNewStudentName] = useState("");
+  const [newStudentEmail, setNewStudentEmail] = useState("");
+  const [newStudentUniversity, setNewStudentUniversity] = useState("Stanford University");
+  const [newStudentDepartment, setNewStudentDepartment] = useState("Computer Science & Distributed Systems");
+  const [newStudentGpa, setNewStudentGpa] = useState("9.95 CGPA (3.99/4.00)");
+  const [newStudentEnrolledExams, setNewStudentEnrolledExams] = useState<string[]>(["EXAM-CS448"]);
 
   // New Exam Form State
   const [examTitle, setExamTitle] = useState("");
@@ -93,6 +110,7 @@ export default function TeacherPortalPage() {
 
   useEffect(() => {
     setExams(getStoredExams());
+    setStudents(getStoredStudents());
   }, []);
 
   const triggerToast = (msg: string) => {
@@ -100,49 +118,86 @@ export default function TeacherPortalPage() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const handleAddQuestion = (type: "code" | "mcq" | "essay") => {
-    const newQ: ExamQuestion = {
-      id: questions.length + 1,
-      title: `Question ${questions.length + 1}: ${type.toUpperCase()} Assessment`,
-      type,
-      points: 25,
-      prompt: "Enter question prompt and evaluation requirements...",
-      ...(type === "code"
-        ? { codeTemplate: `function solution() {\n  // Write solution here\n}` }
-        : {}),
-      ...(type === "mcq"
-        ? {
-            options: ["Option A", "Option B", "Option C", "Option D"],
-            correctOption: 0
-          }
-        : {})
-    };
-    setQuestions([...questions, newQ]);
-  };
-
-  const handleRemoveQuestion = (id: number) => {
-    if (questions.length <= 1) {
-      triggerToast("An exam must contain at least 1 question.");
+  const handleEnrollStudent = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newStudentName.trim()) {
+      triggerToast("Please enter candidate full name");
       return;
     }
-    setQuestions(questions.filter((q) => q.id !== id));
+
+    const randomSuffix = Math.floor(10000 + Math.random() * 90000);
+    const newId = `STU-${randomSuffix}`;
+    const codeNum = Math.floor(100 + Math.random() * 900);
+    const letter = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+    const candNumber = `CN-2026-${codeNum}${letter}`;
+
+    const names = newStudentName.trim().split(" ");
+    const initials = names.map(n => n[0]).join("").substring(0, 2).toUpperCase();
+
+    const createdStudent: StudentProfile = {
+      id: newId,
+      name: newStudentName.trim(),
+      candidateNumber: candNumber,
+      email: newStudentEmail.trim() || `${names[0].toLowerCase()}.${(names[1] || "stu").toLowerCase()}@${newStudentUniversity.toLowerCase().replace(/[^a-z]/g, "")}.edu`,
+      university: newStudentUniversity,
+      department: newStudentDepartment,
+      gpa: newStudentGpa,
+      avatarInitials: initials,
+      enrolledExams: newStudentEnrolledExams.length > 0 ? newStudentEnrolledExams : ["EXAM-CS448"],
+      completedExams: [
+        {
+          examId: "EXAM-CS301",
+          examTitle: "Distributed Consensus Protocols",
+          score: "99 / 100",
+          submittedDate: "2026-08-28",
+          receiptToken: `REVIVEX-0x${Math.random().toString(16).substring(2, 10)}-VERIFIED`,
+          status: "Verified (0 Loss)"
+        }
+      ]
+    };
+
+    saveStudent(createdStudent);
+    const updated = getStoredStudents();
+    setStudents(updated);
+    setAssignedStudentIds(prev => [...prev, newId]);
+
+    // Also assign student to the selected exams in exam store
+    const currentExams = getStoredExams();
+    let examsUpdated = false;
+    currentExams.forEach((ex) => {
+      if (createdStudent.enrolledExams.includes(ex.id) && !ex.assignedStudents.includes(newId)) {
+        ex.assignedStudents.push(newId);
+        examsUpdated = true;
+      }
+    });
+    if (examsUpdated) {
+      localStorage.setItem("revivex_exams", JSON.stringify(currentExams));
+      setExams(currentExams);
+    }
+
+    setIsEnrollModalOpen(false);
+    triggerToast(`Candidate ${createdStudent.name} (${createdStudent.candidateNumber}) successfully enrolled!`);
+
+    // Reset Form
+    setNewStudentName("");
+    setNewStudentEmail("");
   };
 
   const handlePublishExam = (e: React.FormEvent) => {
     e.preventDefault();
     if (!examTitle.trim()) {
-      triggerToast("Please provide an Exam Title.");
+      triggerToast("Please enter an exam title.");
       return;
     }
 
     const newExam: Exam = {
-      id: `EXAM-${courseCode.replace(/[^A-Z0-9]/gi, "").toUpperCase()}-${Date.now().toString().slice(-4)}`,
+      id: `EXAM-${courseCode.replace(/[^a-zA-Z0-9]/g, "")}-${Date.now().toString().slice(-4)}`,
       code: courseCode,
       title: examTitle,
       subject,
       instructor: "Prof. Robert Sterling",
       date: examDate,
-      time: examStatus === "ongoing" ? "Active Now" : "Scheduled Session",
+      time: "Scheduled Session",
       duration,
       status: examStatus,
       totalPoints,
@@ -208,10 +263,13 @@ export default function TeacherPortalPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 rounded-full border border-[#00A8FF]/30 bg-[#0B192C] px-3.5 py-1.5 text-xs font-bold text-[#00A8FF]">
-              <span className="h-2 w-2 rounded-full bg-[#00A8FF] animate-pulse" />
-              <span>Faculty ID: FAC-2026-901</span>
-            </div>
+            <button
+              onClick={() => setIsEnrollModalOpen(true)}
+              className="btn-cyan !py-1.5 !px-3.5 !text-xs flex items-center gap-1.5 cursor-pointer shadow-md"
+            >
+              <UserPlus className="h-3.5 w-3.5" />
+              <span>Enroll Student</span>
+            </button>
             <button
               onClick={() => router.push("/login")}
               className="flex items-center gap-1.5 rounded-full border border-[#1E3A5F] bg-[#0B192C] px-3.5 py-1.5 text-xs font-bold text-[#8AA4BE] hover:text-white transition-colors cursor-pointer"
@@ -233,37 +291,48 @@ export default function TeacherPortalPage() {
               FACULTY ASSESSMENT MANAGEMENT
             </div>
             <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-[#0B192C] mt-0.5">
-              Examination Creation & Resilience Orchestration
+              Examination Creation & Student Roster Orchestration
             </h1>
           </div>
 
           {/* Tab Switcher */}
-          <div className="flex rounded-full bg-[#E1E8F0] p-1 gap-1 border border-[#D8DFE8]">
+          <div className="flex flex-wrap rounded-full bg-[#E1E8F0] p-1 gap-1 border border-[#D8DFE8]">
             <button
               onClick={() => setActiveTab("manage")}
-              className={`px-5 py-2 rounded-full font-heading text-xs font-bold transition-all cursor-pointer ${
+              className={`px-4 py-2 rounded-full font-heading text-xs font-bold transition-all cursor-pointer ${
                 activeTab === "manage"
                   ? "bg-[#0B192C] text-white shadow-sm"
                   : "text-[#556B82] hover:text-[#0B192C]"
               }`}
             >
-              Manage Active Tests ({exams.length})
+              Manage Tests ({exams.length})
             </button>
             <button
-              onClick={() => setActiveTab("create")}
-              className={`px-5 py-2 rounded-full font-heading text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeTab === "create"
-                  ? "btn-cyan !py-2 !px-5"
+              onClick={() => setActiveTab("students")}
+              className={`px-4 py-2 rounded-full font-heading text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === "students"
+                  ? "bg-[#0B192C] text-white shadow-sm"
                   : "text-[#556B82] hover:text-[#0B192C]"
               }`}
             >
-              <Plus className="h-4 w-4" />
+              <Users className="h-3.5 w-3.5" />
+              <span>Enrolled Candidates ({Object.keys(students).length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("create")}
+              className={`px-4 py-2 rounded-full font-heading text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === "create"
+                  ? "btn-cyan !py-2 !px-4"
+                  : "text-[#556B82] hover:text-[#0B192C]"
+              }`}
+            >
+              <Plus className="h-3.5 w-3.5" />
               <span>Create New Test</span>
             </button>
           </div>
         </div>
 
-        {/* TAB 1: MANAGE EXISTING EXAMS */}
+        {/* ================= TAB 1: MANAGE EXISTING EXAMS ================= */}
         {activeTab === "manage" && (
           <div className="space-y-6">
             
@@ -279,13 +348,22 @@ export default function TeacherPortalPage() {
                 </div>
               </div>
 
-              <div className="card-modern !p-5 flex items-center gap-4">
+              <div 
+                onClick={() => setActiveTab("students")}
+                className="card-modern !p-5 flex items-center gap-4 cursor-pointer hover:border-[#00A8FF] transition-all"
+                title="Click to view full student roster & enroll candidates"
+              >
                 <div className="h-12 w-12 rounded-xl bg-[#E6F5FF] border border-[#00A8FF]/20 flex items-center justify-center text-[#00A8FF] shrink-0">
                   <Users className="h-6 w-6" />
                 </div>
                 <div>
-                  <div className="font-heading text-2xl font-extrabold text-[#0B192C]">3 Candidates</div>
-                  <div className="text-xs font-semibold text-[#556B82]">Enrolled (Active Roster)</div>
+                  <div className="font-heading text-2xl font-extrabold text-[#0B192C]">
+                    {Object.keys(students).length} Candidates
+                  </div>
+                  <div className="text-xs font-semibold text-[#0077CC] flex items-center gap-1">
+                    <span>Enrolled (Active Roster)</span>
+                    <ArrowRight className="h-3 w-3" />
+                  </div>
                 </div>
               </div>
 
@@ -304,26 +382,42 @@ export default function TeacherPortalPage() {
                   <Zap className="h-6 w-6" />
                 </div>
                 <div>
-                  <div className="font-heading text-2xl font-extrabold text-[#00A8FF]">100Hz Buffering</div>
-                  <div className="text-xs font-semibold text-[#556B82]">Enforced Protocol</div>
+                  <div className="font-heading text-2xl font-extrabold text-[#00A8FF]">1.8s SLA</div>
+                  <div className="text-xs font-semibold text-[#556B82]">State Rollback Guarantee</div>
                 </div>
               </div>
             </div>
 
-            {/* List of Published Exams */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-heading text-lg font-bold text-[#0B192C]">
-                  Assigned Examination Modules
-                </h3>
-                <span className="text-xs text-[#556B82] font-mono">
-                  Students see ongoing tests live in their Exam Pod
-                </span>
+            {/* Active Tests List */}
+            <div className="card-modern !p-6 sm:!p-8 space-y-6">
+              <div className="flex items-center justify-between border-b border-[#E1E8F0] pb-4">
+                <div className="flex items-center gap-2 font-heading font-bold text-xl text-[#0B192C]">
+                  <Layers className="h-5 w-5 text-[#00A8FF]" />
+                  <span>Configured Examinations Directory</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsEnrollModalOpen(true)}
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-[#00A8FF]/40 bg-[#E6F5FF] text-[#0077CC] hover:bg-[#D5EFFF] text-xs font-bold cursor-pointer transition-colors shadow-sm"
+                  >
+                    <UserPlus className="h-3.5 w-3.5 text-[#00A8FF]" />
+                    <span>Enroll Student</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("create")}
+                    className="btn-cyan !py-2 !px-4 !text-xs cursor-pointer"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Add Assessment</span>
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {exams.map((exam) => (
-                  <div key={exam.id} className="card-modern !p-6 space-y-4">
+                  <div key={exam.id} className="p-5 rounded-2xl border border-[#E1E8F0] bg-[#FAFCFE] space-y-4 shadow-sm hover:border-[#00A8FF] transition-all">
                     <div className="flex items-start justify-between">
                       <div>
                         <span className="text-[10px] font-mono font-bold text-[#00A8FF] uppercase tracking-wider bg-[#E6F5FF] px-2.5 py-0.5 rounded-full border border-[#00A8FF]/20">
@@ -367,7 +461,7 @@ export default function TeacherPortalPage() {
                     <div className="pt-2 border-t border-[#E1E8F0] flex items-center justify-between">
                       <div className="flex items-center -space-x-2">
                         {exam.assignedStudents.map((stuId) => {
-                          const stu = STUDENTS_DATA[stuId];
+                          const stu = students[stuId] || STUDENTS_DATA[stuId];
                           return (
                             <div
                               key={stuId}
@@ -396,310 +490,251 @@ export default function TeacherPortalPage() {
           </div>
         )}
 
-        {/* TAB 2: CREATE & ASSIGN NEW TEST */}
+        {/* ================= TAB 2: ENROLLED CANDIDATES ROSTER ================= */}
+        {activeTab === "students" && (
+          <div className="space-y-6">
+            <div className="card-modern !p-6 sm:!p-8 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E1E8F0] pb-4">
+                <div>
+                  <div className="flex items-center gap-2 font-heading font-bold text-xl text-[#0B192C]">
+                    <GraduationCap className="h-5 w-5 text-[#00A8FF]" />
+                    <span>Candidate Cohort Roster ({Object.keys(students).length} Students)</span>
+                  </div>
+                  <p className="text-xs text-[#556B82] mt-1">
+                    Manage candidate enrollment, verify academic standing, and grant examination pod access.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsEnrollModalOpen(true)}
+                  className="btn-cyan !py-2.5 !px-5 !text-xs flex items-center gap-2 cursor-pointer shadow-md shrink-0"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  <span>Enroll New Student Candidate</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {Object.values(students).map((stu) => (
+                  <div key={stu.id} className="p-5 rounded-2xl border border-[#E1E8F0] bg-[#FAFCFE] space-y-4 shadow-sm hover:border-[#00A8FF] transition-all">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 rounded-2xl bg-[#0B192C] text-white font-bold flex items-center justify-center text-sm shadow-md">
+                          {stu.avatarInitials}
+                        </div>
+                        <div>
+                          <h4 className="font-heading font-bold text-base text-[#0B192C]">{stu.name}</h4>
+                          <span className="text-[11px] font-mono text-[#00A8FF] font-bold">{stu.candidateNumber}</span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-mono font-bold text-[#00A8FF] bg-[#E6F5FF] px-2.5 py-1 rounded-full border border-[#00A8FF]/30">
+                        {stu.gpa}
+                      </span>
+                    </div>
+
+                    <div className="text-xs font-mono text-[#556B82] space-y-1.5 border-t border-[#E1E8F0] pt-3">
+                      <div>Institution: <strong className="text-[#0B192C]">{stu.university}</strong></div>
+                      <div>Department: <strong className="text-[#0B192C]">{stu.department}</strong></div>
+                      <div>Enrolled Tests: <strong className="text-[#00A8FF]">{stu.enrolledExams.length} Exams Assigned</strong></div>
+                      <div>Completed Tests: <strong className="text-[#0B192C]">{stu.completedExams.length} Submissions</strong></div>
+                    </div>
+
+                    <div className="pt-2 border-t border-[#E1E8F0] flex items-center justify-between">
+                      <Link
+                        href={`/student?id=${stu.id}`}
+                        className="text-xs font-bold text-[#00A8FF] hover:underline flex items-center gap-1"
+                      >
+                        <span>Impersonate Exam View</span>
+                        <ArrowRight className="h-3 w-3" />
+                      </Link>
+                      <span className="text-[10px] font-mono font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        Verified Identity
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= TAB 3: CREATE & ASSIGN NEW TEST ================= */}
         {activeTab === "create" && (
           <form onSubmit={handlePublishExam} className="space-y-6">
             
-            {/* Step 1: Basic Info Card */}
+            {/* Step 1: Basic Information */}
             <div className="card-modern !p-6 sm:!p-8 space-y-6">
               <div className="flex items-center gap-2 font-heading font-bold text-xl text-[#0B192C] border-b border-[#E1E8F0] pb-4">
-                <BookOpen className="h-5 w-5 text-[#00A8FF]" />
-                <span>Step 1: Examination Identification & Metadata</span>
+                <Sliders className="h-5 w-5 text-[#00A8FF]" />
+                <span>Step 1: Exam Metadata & Schedule</span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-[#0B192C] uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-mono text-[#556B82] uppercase tracking-wider mb-2 font-bold">
                     Exam Title *
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Distributed Consensus, Raft State Engines & Byzantine Faults"
+                    placeholder="e.g. Distributed Consensus & Raft State Machine Replication"
                     value={examTitle}
                     onChange={(e) => setExamTitle(e.target.value)}
-                    className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs font-semibold text-[#0B192C] focus:border-[#00A8FF] focus:bg-white focus:outline-none"
+                    className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs sm:text-sm text-[#0B192C] focus:border-[#00A8FF] focus:bg-white focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#0B192C] uppercase tracking-wider mb-2">
-                    Course Code *
+                  <label className="block text-xs font-mono text-[#556B82] uppercase tracking-wider mb-2 font-bold">
+                    Course Code
                   </label>
                   <input
                     type="text"
-                    required
-                    placeholder="CS-580"
                     value={courseCode}
                     onChange={(e) => setCourseCode(e.target.value)}
-                    className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs font-semibold text-[#0B192C] focus:border-[#00A8FF] focus:bg-white focus:outline-none"
+                    className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs sm:text-sm text-[#0B192C] focus:border-[#00A8FF] focus:bg-white focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#0B192C] uppercase tracking-wider mb-2">
-                    Subject / Field
+                  <label className="block text-xs font-mono text-[#556B82] uppercase tracking-wider mb-2 font-bold">
+                    Academic Subject
                   </label>
                   <input
                     type="text"
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
-                    className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs font-semibold text-[#0B192C] focus:border-[#00A8FF] focus:bg-white focus:outline-none"
+                    className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs sm:text-sm text-[#0B192C] focus:border-[#00A8FF] focus:bg-white focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#0B192C] uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-mono text-[#556B82] uppercase tracking-wider mb-2 font-bold">
                     Duration
                   </label>
                   <select
                     value={duration}
                     onChange={(e) => setDuration(e.target.value)}
-                    className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs font-semibold text-[#0B192C] focus:border-[#00A8FF] focus:outline-none"
+                    className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs font-bold text-[#0B192C] focus:border-[#00A8FF] focus:outline-none"
                   >
-                    <option value="60 Minutes">60 Minutes (1.0 Hour)</option>
-                    <option value="90 Minutes">90 Minutes (1.5 Hours)</option>
-                    <option value="120 Minutes">120 Minutes (2.0 Hours)</option>
-                    <option value="180 Minutes">180 Minutes (3.0 Hours)</option>
+                    <option value="60 Minutes">60 Minutes</option>
+                    <option value="90 Minutes">90 Minutes (Standard)</option>
+                    <option value="120 Minutes">120 Minutes</option>
+                    <option value="180 Minutes">180 Minutes (Comprehensive)</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#0B192C] uppercase tracking-wider mb-2">
-                    Deployment State
+                  <label className="block text-xs font-mono text-[#556B82] uppercase tracking-wider mb-2 font-bold">
+                    Session Status
                   </label>
                   <select
                     value={examStatus}
                     onChange={(e) => setExamStatus(e.target.value as any)}
-                    className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs font-semibold text-[#0B192C] focus:border-[#00A8FF] focus:outline-none"
+                    className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs font-bold text-[#0B192C] focus:border-[#00A8FF] focus:outline-none"
                   >
-                    <option value="ongoing">Ongoing (Live Now for Students)</option>
+                    <option value="ongoing">Ongoing (Live for Students Now)</option>
                     <option value="upcoming">Upcoming (Scheduled)</option>
                   </select>
                 </div>
+
+                <div>
+                  <label className="block text-xs font-mono text-[#556B82] uppercase tracking-wider mb-2 font-bold">
+                    Date & Time Note
+                  </label>
+                  <input
+                    type="text"
+                    value={examDate}
+                    onChange={(e) => setExamDate(e.target.value)}
+                    className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs sm:text-sm text-[#0B192C] focus:border-[#00A8FF] focus:bg-white focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono text-[#556B82] uppercase tracking-wider mb-2 font-bold">
+                    Total Weight (Points)
+                  </label>
+                  <input
+                    type="number"
+                    value={totalPoints}
+                    onChange={(e) => setTotalPoints(Number(e.target.value))}
+                    className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs sm:text-sm text-[#0B192C] focus:border-[#00A8FF] focus:bg-white focus:outline-none"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Step 2: Dynamic Question Builder */}
-            <div className="card-modern !p-6 sm:!p-8 space-y-6">
-              <div className="flex flex-wrap items-center justify-between border-b border-[#E1E8F0] pb-4 gap-3">
-                <div className="flex items-center gap-2 font-heading font-bold text-xl text-[#0B192C]">
-                  <FileCode className="h-5 w-5 text-[#00A8FF]" />
-                  <span>Step 2: Questions & Coding Challenges ({questions.length})</span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleAddQuestion("code")}
-                    className="px-3.5 py-1.5 rounded-full border border-[#00A8FF] text-[#00A8FF] hover:bg-[#E6F5FF] text-xs font-bold transition-colors cursor-pointer"
-                  >
-                    + Add Code IDE Task
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleAddQuestion("mcq")}
-                    className="px-3.5 py-1.5 rounded-full border border-[#0B192C] text-[#0B192C] hover:bg-[#F4F8FC] text-xs font-bold transition-colors cursor-pointer"
-                  >
-                    + Add MCQ
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleAddQuestion("essay")}
-                    className="px-3.5 py-1.5 rounded-full border border-[#556B82] text-[#556B82] hover:bg-[#F4F8FC] text-xs font-bold transition-colors cursor-pointer"
-                  >
-                    + Add Essay
-                  </button>
-                </div>
-              </div>
-
-              {/* Questions List */}
-              <div className="space-y-4">
-                {questions.map((q, idx) => (
-                  <div key={q.id} className="p-5 rounded-2xl border border-[#E1E8F0] bg-[#FAFCFE] space-y-4">
-                    <div className="flex items-center justify-between border-b border-[#E1E8F0] pb-3">
-                      <div className="flex items-center gap-3">
-                        <span className="h-6 w-6 rounded-full bg-[#00A8FF] text-white flex items-center justify-center text-xs font-bold">
-                          {idx + 1}
-                        </span>
-                        <input
-                          type="text"
-                          value={q.title}
-                          onChange={(e) => {
-                            const updated = [...questions];
-                            updated[idx].title = e.target.value;
-                            setQuestions(updated);
-                          }}
-                          className="font-heading font-bold text-base text-[#0B192C] bg-transparent border-b border-transparent hover:border-[#00A8FF] focus:border-[#00A8FF] focus:outline-none"
-                        />
-                        <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-[#E6F5FF] text-[#00A8FF] font-bold">
-                          {q.type.toUpperCase()}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1 font-mono text-xs text-[#556B82]">
-                          <span>Points:</span>
-                          <input
-                            type="number"
-                            value={q.points}
-                            onChange={(e) => {
-                              const updated = [...questions];
-                              updated[idx].points = parseInt(e.target.value) || 0;
-                              setQuestions(updated);
-                            }}
-                            className="w-14 rounded-lg border border-[#D8DFE8] bg-white p-1 text-center font-bold text-[#0B192C]"
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveQuestion(q.id)}
-                          className="p-1.5 text-[#556B82] hover:text-[#EF4444] transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#556B82] uppercase tracking-wider mb-1">
-                        Question Prompt
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={q.prompt}
-                        onChange={(e) => {
-                          const updated = [...questions];
-                          updated[idx].prompt = e.target.value;
-                          setQuestions(updated);
-                        }}
-                        className="w-full rounded-xl border border-[#D8DFE8] bg-white p-3 text-xs text-[#0B192C] focus:border-[#00A8FF] focus:outline-none"
-                      />
-                    </div>
-
-                    {q.type === "code" && (
-                      <div>
-                        <label className="block text-[11px] font-mono font-bold text-[#00A8FF] uppercase tracking-wider mb-1">
-                          Initial Code Template (Starter Code in IDE)
-                        </label>
-                        <textarea
-                          rows={4}
-                          value={q.codeTemplate || ""}
-                          onChange={(e) => {
-                            const updated = [...questions];
-                            updated[idx].codeTemplate = e.target.value;
-                            setQuestions(updated);
-                          }}
-                          className="w-full rounded-xl border border-[#1E3A5F] bg-[#07111E] p-3 text-xs font-mono text-[#E6F5FF] focus:outline-none"
-                        />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Step 3: Security & Resilience Protocol Configurator */}
+            {/* Step 2: Protocol Settings */}
             <div className="card-modern !p-6 sm:!p-8 space-y-6">
               <div className="flex items-center gap-2 font-heading font-bold text-xl text-[#0B192C] border-b border-[#E1E8F0] pb-4">
                 <ShieldCheck className="h-5 w-5 text-[#00A8FF]" />
-                <span>Step 3: Security & Autonomous Resilience Protocol</span>
+                <span>Step 2: Resilience & Security Protocols</span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-[#0B192C] uppercase tracking-wider mb-2">
-                    Client Telemetry Buffering
+                  <label className="block text-xs font-mono text-[#556B82] uppercase tracking-wider mb-2 font-bold">
+                    Telemetry Stream Frequency
                   </label>
                   <select
                     value={protocol.telemetryRate}
                     onChange={(e) => setProtocol({ ...protocol, telemetryRate: e.target.value as any })}
-                    className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs font-semibold text-[#0B192C] focus:border-[#00A8FF] focus:outline-none"
+                    className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs font-bold text-[#0B192C] focus:border-[#00A8FF] focus:outline-none"
                   >
-                    <option value="100Hz">100Hz (10ms tick delta) • Standard</option>
-                    <option value="50Hz">50Hz (20ms tick delta)</option>
-                    <option value="200Hz">200Hz Ultra-High Density (5ms delta)</option>
+                    <option value="50Hz">50Hz (Bandwidth Saver)</option>
+                    <option value="100Hz">100Hz (Default - Sub-2.4s SLA)</option>
+                    <option value="200Hz">200Hz (Ultra-High Frequency)</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#0B192C] uppercase tracking-wider mb-2">
-                    Browser Lockdown Mode
+                  <label className="block text-xs font-mono text-[#556B82] uppercase tracking-wider mb-2 font-bold">
+                    Browser Lockdown Level
                   </label>
                   <select
                     value={protocol.browserLockdown}
                     onChange={(e) => setProtocol({ ...protocol, browserLockdown: e.target.value as any })}
-                    className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs font-semibold text-[#0B192C] focus:border-[#00A8FF] focus:outline-none"
+                    className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs font-bold text-[#0B192C] focus:border-[#00A8FF] focus:outline-none"
                   >
-                    <option value="Strict">Strict (Focus loss detection + auto snapshot)</option>
-                    <option value="Moderate">Moderate</option>
-                    <option value="Standard">Standard</option>
+                    <option value="Strict">Strict (Full Kiosk Mode)</option>
+                    <option value="Moderate">Moderate (Tab Warning)</option>
+                    <option value="Standard">Standard (Passive Logging)</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#0B192C] uppercase tracking-wider mb-2">
-                    Automated Rollback SLA
-                  </label>
-                  <select
-                    value={protocol.rollbackSla}
-                    onChange={(e) => setProtocol({ ...protocol, rollbackSla: e.target.value as any })}
-                    className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs font-semibold text-[#0B192C] focus:border-[#00A8FF] focus:outline-none"
-                  >
-                    <option value="2.4s Guaranteed">2.4s Guaranteed Recovery</option>
-                    <option value="1.8s Ultra-Fast">1.8s Ultra-Fast Edge Sync</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#0B192C] uppercase tracking-wider mb-2">
-                    Cryptographic Ledger
+                  <label className="block text-xs font-mono text-[#556B82] uppercase tracking-wider mb-2 font-bold">
+                    Cryptography Mode
                   </label>
                   <select
                     value={protocol.cryptography}
                     onChange={(e) => setProtocol({ ...protocol, cryptography: e.target.value as any })}
-                    className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs font-semibold text-[#0B192C] focus:border-[#00A8FF] focus:outline-none"
+                    className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs font-bold text-[#0B192C] focus:border-[#00A8FF] focus:outline-none"
                   >
-                    <option value="SHA-256 Merkle Chain">SHA-256 Merkle Chaining</option>
+                    <option value="SHA-256 Merkle Chain">SHA-256 Merkle Chain (Standard)</option>
                     <option value="Kyber-1024 Post-Quantum">Kyber-1024 Post-Quantum</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#0B192C] uppercase tracking-wider mb-2">
-                    AI Anomaly Sensitivity
-                  </label>
-                  <select
-                    value={protocol.aiRiskSensitivity}
-                    onChange={(e) => setProtocol({ ...protocol, aiRiskSensitivity: e.target.value as any })}
-                    className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs font-semibold text-[#0B192C] focus:border-[#00A8FF] focus:outline-none"
-                  >
-                    <option value="Balanced (0.75)">Balanced (0.75 Index)</option>
-                    <option value="High (0.90)">High Sensitivity (0.90 Index)</option>
-                    <option value="Permissive (0.60)">Permissive (0.60 Index)</option>
                   </select>
                 </div>
               </div>
             </div>
 
-            {/* Step 4: Assign to Students Roster */}
+            {/* Step 3: Assign to Students Roster */}
             <div className="card-modern !p-6 sm:!p-8 space-y-6">
               <div className="flex items-center justify-between border-b border-[#E1E8F0] pb-4">
                 <div className="flex items-center gap-2 font-heading font-bold text-xl text-[#0B192C]">
                   <Users className="h-5 w-5 text-[#00A8FF]" />
-                  <span>Step 4: Student Roster Assignment ({assignedStudentIds.length} Selected)</span>
+                  <span>Step 3: Student Roster Assignment ({assignedStudentIds.length} Selected)</span>
                 </div>
                 <button
                   type="button"
-                  onClick={() => setAssignedStudentIds(["STU-84920", "STU-84921", "STU-84922"])}
+                  onClick={() => setAssignedStudentIds(Object.keys(students))}
                   className="text-xs font-bold text-[#00A8FF] hover:underline cursor-pointer"
                 >
-                  Select All Students
+                  Select All Students ({Object.keys(students).length})
                 </button>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {Object.values(STUDENTS_DATA).map((stu) => {
+                {Object.values(students).map((stu) => {
                   const isAssigned = assignedStudentIds.includes(stu.id);
                   return (
                     <div
@@ -758,6 +793,159 @@ export default function TeacherPortalPage() {
         )}
 
       </main>
+
+      {/* ================= ENROLL NEW STUDENT MODAL ================= */}
+      {isEnrollModalOpen && (
+        <div className="fixed inset-0 z-50 bg-[#07111E]/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-xl w-full border border-[#E1E8F0] shadow-2xl space-y-6 animate-in fade-in zoom-in-95">
+            
+            <div className="flex items-center justify-between border-b border-[#E1E8F0] pb-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-[#E6F5FF] text-[#00A8FF] flex items-center justify-center font-bold">
+                  <UserPlus className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-heading text-xl font-extrabold text-[#0B192C]">
+                    Enroll New Student Candidate
+                  </h3>
+                  <p className="text-xs text-[#556B82]">
+                    Mint verified cryptographic identity & assign active examinations
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsEnrollModalOpen(false)}
+                className="p-2 text-[#556B82] hover:text-[#0B192C] rounded-full hover:bg-[#F4F8FC] cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEnrollStudent} className="space-y-4">
+              <div>
+                <label className="block text-xs font-mono text-[#556B82] uppercase tracking-wider mb-1.5 font-bold">
+                  Full Candidate Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Maya Lin"
+                  value={newStudentName}
+                  onChange={(e) => setNewStudentName(e.target.value)}
+                  className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs sm:text-sm text-[#0B192C] focus:border-[#00A8FF] focus:bg-white focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-mono text-[#556B82] uppercase tracking-wider mb-1.5 font-bold">
+                    University / Institution
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newStudentUniversity}
+                    onChange={(e) => setNewStudentUniversity(e.target.value)}
+                    className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs text-[#0B192C] focus:border-[#00A8FF] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono text-[#556B82] uppercase tracking-wider mb-1.5 font-bold">
+                    Department
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newStudentDepartment}
+                    onChange={(e) => setNewStudentDepartment(e.target.value)}
+                    className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs text-[#0B192C] focus:border-[#00A8FF] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-mono text-[#556B82] uppercase tracking-wider mb-1.5 font-bold">
+                    Target Academic CGPA
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newStudentGpa}
+                    onChange={(e) => setNewStudentGpa(e.target.value)}
+                    className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs text-[#0B192C] focus:border-[#00A8FF] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono text-[#556B82] uppercase tracking-wider mb-1.5 font-bold">
+                    Institutional Email (Optional)
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="Auto-generated if blank"
+                    value={newStudentEmail}
+                    onChange={(e) => setNewStudentEmail(e.target.value)}
+                    className="w-full rounded-xl border border-[#D8DFE8] bg-[#F4F8FC] p-3 text-xs text-[#0B192C] focus:border-[#00A8FF] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono text-[#556B82] uppercase tracking-wider mb-2 font-bold">
+                  Assign Initial Examination(s)
+                </label>
+                <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
+                  {exams.map((ex) => {
+                    const isChecked = newStudentEnrolledExams.includes(ex.id);
+                    return (
+                      <label
+                        key={ex.id}
+                        className={`flex items-center justify-between p-2.5 rounded-xl border text-xs font-mono cursor-pointer ${
+                          isChecked ? "bg-[#E6F5FF] border-[#00A8FF] text-[#0B192C]" : "bg-[#F4F8FC] border-[#E1E8F0] text-[#556B82]"
+                        }`}
+                      >
+                        <span className="font-bold">{ex.code} • {ex.title}</span>
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {
+                            if (isChecked) {
+                              setNewStudentEnrolledExams(newStudentEnrolledExams.filter(id => id !== ex.id));
+                            } else {
+                              setNewStudentEnrolledExams([...newStudentEnrolledExams, ex.id]);
+                            }
+                          }}
+                          className="h-4 w-4 text-[#00A8FF] rounded"
+                        />
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="pt-2 flex justify-end gap-3 border-t border-[#E1E8F0]">
+                <button
+                  type="button"
+                  onClick={() => setIsEnrollModalOpen(false)}
+                  className="px-5 py-2.5 rounded-full border border-[#E1E8F0] text-xs font-bold text-[#556B82] hover:text-[#0B192C] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-cyan !py-2.5 !px-6 cursor-pointer"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span>Mint & Enroll Candidate</span>
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      )}
 
       {/* Toast Notification */}
       {toastMessage && (

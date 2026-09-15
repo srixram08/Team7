@@ -75,7 +75,7 @@ export const STUDENTS_DATA: Record<string, StudentProfile> = {
     email: "alex.chen@stanford.edu",
     university: "Stanford University",
     department: "Computer Science & Distributed Systems",
-    gpa: "3.94 GPA",
+    gpa: "9.95 CGPA (3.99/4.00)",
     avatarInitials: "AC",
     enrolledExams: ["EXAM-CS448", "EXAM-PHYS301", "EXAM-SEC502"],
     completedExams: [
@@ -90,7 +90,7 @@ export const STUDENTS_DATA: Record<string, StudentProfile> = {
       {
         examId: "EXAM-ALG202",
         examTitle: "Advanced Algorithms & Graph Theory",
-        score: "94 / 100",
+        score: "96 / 100",
         submittedDate: "2026-07-14",
         receiptToken: "REVIVEX-0x7c91b4e29a3f8101-VERIFIED",
         status: "Verified (0 Loss)",
@@ -104,14 +104,14 @@ export const STUDENTS_DATA: Record<string, StudentProfile> = {
     email: "sarah.j@mit.edu",
     university: "Massachusetts Institute of Technology",
     department: "Physics & Quantum Information",
-    gpa: "3.89 GPA",
+    gpa: "9.92 CGPA (3.98/4.00)",
     avatarInitials: "SJ",
     enrolledExams: ["EXAM-PHYS301", "EXAM-CS448"],
     completedExams: [
       {
         examId: "EXAM-QNT101",
         examTitle: "Quantum Mechanics & Superposition",
-        score: "96 / 100",
+        score: "97 / 100",
         submittedDate: "2026-08-18",
         receiptToken: "REVIVEX-0x4b8e21a9c3d4f5e6-VERIFIED",
         status: "Verified (0 Loss)",
@@ -125,7 +125,7 @@ export const STUDENTS_DATA: Record<string, StudentProfile> = {
     email: "marcus.v@berkeley.edu",
     university: "UC Berkeley",
     department: "Applied Cryptography & Security",
-    gpa: "3.96 GPA",
+    gpa: "9.98 CGPA (4.00/4.00)",
     avatarInitials: "MV",
     enrolledExams: ["EXAM-SEC502", "EXAM-CS448", "EXAM-PHYS301"],
     completedExams: [
@@ -318,6 +318,45 @@ export function saveExam(newExam: Exam): void {
   localStorage.setItem("revivex_exams", JSON.stringify(exams));
 }
 
-export function getStudentProfile(studentId: string): StudentProfile {
-  return STUDENTS_DATA[studentId] || STUDENTS_DATA["STU-84920"];
+// Student Storage & Persistence Helpers
+export function getStoredStudents(): Record<string, StudentProfile> {
+  if (typeof window === "undefined") return STUDENTS_DATA;
+  const saved = localStorage.getItem("revivex_students");
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      const merged: Record<string, StudentProfile> = { ...parsed };
+      // Guarantee updated high CGPA and records for core candidates
+      for (const id of Object.keys(STUDENTS_DATA)) {
+        if (!merged[id]) {
+          merged[id] = STUDENTS_DATA[id];
+        } else {
+          merged[id] = {
+            ...merged[id],
+            gpa: STUDENTS_DATA[id].gpa,
+            completedExams: STUDENTS_DATA[id].completedExams
+          };
+        }
+      }
+      return merged;
+    } catch {
+      return STUDENTS_DATA;
+    }
+  }
+  return STUDENTS_DATA;
 }
+
+export function saveStudent(newStudent: StudentProfile): void {
+  if (typeof window === "undefined") return;
+  const students = getStoredStudents();
+  students[newStudent.id] = newStudent;
+  localStorage.setItem("revivex_students", JSON.stringify(students));
+  // Dispatch custom storage event for live tab synchronization
+  window.dispatchEvent(new Event("storage"));
+}
+
+export function getStudentProfile(studentId: string): StudentProfile {
+  const allStudents = getStoredStudents();
+  return allStudents[studentId] || allStudents["STU-84920"] || STUDENTS_DATA["STU-84920"];
+}
+

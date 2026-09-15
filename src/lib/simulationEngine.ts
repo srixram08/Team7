@@ -1,6 +1,7 @@
 "use client";
 
 import { SessionStatus } from "../components/ui/StatusRing";
+import { inferRisk, TelemetrySample, RiskInferenceResult } from "./riskEngine";
 
 export interface CandidateSession {
   id: string;
@@ -18,6 +19,7 @@ export interface CandidateSession {
   lastCheckpointId: string;
   checkpointTimestamp: string;
   hash: string;
+  riskDetails?: RiskInferenceResult;
 }
 
 export interface TelemetryPoint {
@@ -25,6 +27,8 @@ export interface TelemetryPoint {
   latency: number;
   cpu: number;
   riskScore: number;
+  eventLoopLag?: number;
+  isColdStart?: boolean;
 }
 
 export interface RecoveryReportData {
@@ -39,6 +43,13 @@ export interface RecoveryReportData {
   hash: string;
   blockNumber: number;
   reasoningSteps: string[];
+  benchmarkStats?: {
+    trialsCount: number;
+    recoverySuccessRate: string;
+    medianRecoveryLatencyMs: number;
+    p95RecoveryLatencyMs: number;
+    unverifiedLossCount: number;
+  };
 }
 
 export const INITIAL_CANDIDATES: CandidateSession[] = [
@@ -57,7 +68,7 @@ export const INITIAL_CANDIDATES: CandidateSession[] = [
     stateDelta: 142,
     lastCheckpointId: "CHK-1042-89B",
     checkpointTimestamp: "2026-07-28 20:44:09",
-    hash: "0xa8f492c10b7e49d29f8c12a3456789abcdef",
+    hash: "0xa8f492c10b7e49d29f8c12a3456789abcdef0123456789abcdef0123456789ab",
   },
   {
     id: "STU-84921",
@@ -74,7 +85,7 @@ export const INITIAL_CANDIDATES: CandidateSession[] = [
     stateDelta: 512,
     lastCheckpointId: "CHK-1042-91A",
     checkpointTimestamp: "2026-07-28 20:43:55",
-    hash: "0x7b3e19a45f8c12b99d0e12345678912345",
+    hash: "0x7b3e19a45f8c12b99d0e123456789123456789abcdef0123456789abcdef0123",
   },
   {
     id: "STU-84922",
@@ -84,14 +95,14 @@ export const INITIAL_CANDIDATES: CandidateSession[] = [
     currentQuestion: 9,
     totalQuestions: 40,
     status: "stable",
-    riskScore: 5,
+    riskScore: 6,
     latency: 12,
     cpuLoad: 18,
     battery: 95,
     stateDelta: 96,
     lastCheckpointId: "CHK-1042-88C",
     checkpointTimestamp: "2026-07-28 20:44:01",
-    hash: "0x3f1e92d88c7a10b44e211234567890abc",
+    hash: "0x3f1e92d88c7a10b44e211234567890abcdef0123456789abcdef0123456789ab",
   },
   {
     id: "STU-84923",
@@ -101,14 +112,14 @@ export const INITIAL_CANDIDATES: CandidateSession[] = [
     currentQuestion: 31,
     totalQuestions: 40,
     status: "stable",
-    riskScore: 18,
+    riskScore: 16,
     latency: 22,
     cpuLoad: 31,
     battery: 64,
     stateDelta: 280,
     lastCheckpointId: "CHK-1042-94D",
     checkpointTimestamp: "2026-07-28 20:44:11",
-    hash: "0xc991e2b44a701e9b2c3d1234567894567",
+    hash: "0xc991e2b44a701e9b2c3d123456789456789abcdef0123456789abcdef012345",
   },
   {
     id: "STU-84924",
@@ -118,17 +129,18 @@ export const INITIAL_CANDIDATES: CandidateSession[] = [
     currentQuestion: 18,
     totalQuestions: 40,
     status: "stable",
-    riskScore: 28,
+    riskScore: 24,
     latency: 35,
     cpuLoad: 42,
     battery: 45,
     stateDelta: 190,
     lastCheckpointId: "CHK-1042-90E",
     checkpointTimestamp: "2026-07-28 20:43:40",
-    hash: "0x1a2b3c4d5e6f7a8b9c0d123456789efgh",
+    hash: "0x1a2b3c4d5e6f7a8b9c0d123456789efabcdef0123456789abcdef0123456789",
   },
 ];
 
+// Generate telemetry points driven by the real riskEngine logistic regression model
 export const generateMockTelemetry = (): TelemetryPoint[] => {
   const points: TelemetryPoint[] = [];
   const now = new Date();
@@ -139,11 +151,29 @@ export const generateMockTelemetry = (): TelemetryPoint[] => {
       minute: "2-digit",
       second: "2-digit",
     });
+
+    const latency = Math.floor(14 + Math.sin(i * 0.8) * 8 + Math.random() * 6);
+    const cpu = Math.floor(22 + Math.cos(i * 0.5) * 10 + Math.random() * 5);
+    const eventLoopLag = Math.floor(2 + Math.random() * 4);
+
+    const sample: TelemetrySample = {
+      rtt: latency,
+      jitter: Math.floor(latency * 0.15),
+      eventLoopLag,
+      offlineDurationSec: 0,
+      inputCadenceVariance: 24,
+      sessionAgeSec: 300 + (10 - i) * 3,
+    };
+
+    const risk = inferRisk(sample);
+
     points.push({
       time: timeStr,
-      latency: Math.floor(12 + Math.random() * 20),
-      cpu: Math.floor(20 + Math.random() * 25),
-      riskScore: Math.floor(8 + Math.random() * 15),
+      latency,
+      cpu,
+      riskScore: risk.score,
+      eventLoopLag,
+      isColdStart: false,
     });
   }
 

@@ -135,7 +135,7 @@ export default function Home() {
 
                 {/* Action Buttons */}
                 <div className="hero-actions">
-                  <Link href="/student" className="btn-cyan">
+                  <Link href="/login?role=student&intent=exam" className="btn-cyan">
                     <span>Launch Exam Pod</span>
                     <ArrowRight className="h-4 w-4" />
                   </Link>

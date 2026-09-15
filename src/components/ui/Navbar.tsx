@@ -55,7 +55,7 @@ export const Navbar: React.FC = () => {
               Sign In
             </Link>
             <Link
-              href="/student"
+              href="/login?role=student&intent=exam"
               className="btn-cyan !py-2.5 !px-5 !text-xs"
             >
               Launch Exam Pod
@@ -86,7 +86,7 @@ export const Navbar: React.FC = () => {
               <Link href="/login" onClick={() => setIsMobileOpen(false)} className="w-full text-center py-2.5 rounded-full border border-[#0B192C] text-xs uppercase font-bold text-[#0B192C]">
                 Sign In
               </Link>
-              <Link href="/student" onClick={() => setIsMobileOpen(false)} className="btn-cyan w-full text-center">
+              <Link href="/login?role=student&intent=exam" onClick={() => setIsMobileOpen(false)} className="btn-cyan w-full text-center">
                 Launch Exam Pod
               </Link>
             </div>

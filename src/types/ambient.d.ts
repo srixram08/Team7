@@ -17,4 +17,10 @@ declare module "@react-three/drei" {
   export const Float: any;
   export const Html: any;
   export const Text: any;
+  export const Line: any;
+  export const Icosahedron: any;
+  export const Points: any;
+  export const PointMaterial: any;
+  export const Ring: any;
 }
+
