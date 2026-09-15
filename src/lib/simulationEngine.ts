@@ -194,13 +194,34 @@ export interface FailoverEvent {
 }
 
 export const FAILOVER_STORAGE_KEY = "revivex_active_failover_event";
+export const FAILOVER_CHANNEL_NAME = "revivex_failover_bus";
+
+export function getFailoverBroadcastChannel(): BroadcastChannel | null {
+  if (typeof window === "undefined" || !("BroadcastChannel" in window)) return null;
+  try {
+    return new BroadcastChannel(FAILOVER_CHANNEL_NAME);
+  } catch {
+    return null;
+  }
+}
 
 export function broadcastFailoverEvent(event: FailoverEvent) {
   if (typeof window === "undefined") return;
   try {
     const serialized = JSON.stringify(event);
     localStorage.setItem(FAILOVER_STORAGE_KEY, serialized);
+
+    // 1. Instant cross-tab BroadcastChannel
+    try {
+      const channel = getFailoverBroadcastChannel();
+      channel?.postMessage(event);
+      channel?.close();
+    } catch {}
+
+    // 2. Same-window CustomEvent
     window.dispatchEvent(new CustomEvent("revivex_failover_event", { detail: event }));
+
+    // 3. Fallback StorageEvent
     window.dispatchEvent(
       new StorageEvent("storage", {
         key: FAILOVER_STORAGE_KEY,
@@ -227,6 +248,11 @@ export function clearActiveFailoverEvent() {
   if (typeof window === "undefined") return;
   try {
     localStorage.removeItem(FAILOVER_STORAGE_KEY);
+    try {
+      const channel = getFailoverBroadcastChannel();
+      channel?.postMessage({ type: "CLEAR" });
+      channel?.close();
+    } catch {}
     window.dispatchEvent(new CustomEvent("revivex_failover_cleared"));
     window.dispatchEvent(
       new StorageEvent("storage", {

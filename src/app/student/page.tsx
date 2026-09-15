@@ -83,6 +83,7 @@ import {
   broadcastFailoverEvent,
   getActiveFailoverEvent,
   clearActiveFailoverEvent,
+  getFailoverBroadcastChannel,
   FAILOVER_STORAGE_KEY,
 } from "@/lib/simulationEngine";
 
@@ -204,49 +205,69 @@ function StudentPortalContent() {
     return () => clearInterval(timer);
   }, [viewMode, isSubmitted]);
 
-  // Real-time failover event synchronization (cross-tab from /demo, /admin, or self)
+  // Real-time failover event synchronization (instant cross-tab via BroadcastChannel & storage)
   useEffect(() => {
-    const handleFailoverEvent = (e: any) => {
-      let event: FailoverEvent | null = null;
-      if (e.detail) {
-        event = e.detail as FailoverEvent;
-      } else if (e.key === FAILOVER_STORAGE_KEY && e.newValue) {
-        try {
-          event = JSON.parse(e.newValue) as FailoverEvent;
-        } catch {}
+    let dismissTimer: NodeJS.Timeout | null = null;
+
+    const processFailover = (event: FailoverEvent) => {
+      if (!event || !event.status) return;
+
+      setLiveFailover(event);
+
+      if (event.status === "recovering") {
+        setIsOnline(false);
+        setOfflineBufferCount((prev) => prev + 1);
+        setTestConsoleOutput((prev) => [
+          ...prev,
+          `[FAILOVER INJECTED] Socket severed & main thread frozen! Offline 100Hz IndexedDB buffering active.`,
+        ]);
+      } else if (event.status === "recovered") {
+        setIsOnline(true);
+        setLastSavedHash(event.hash);
+        setLastSavedTime("Just now (Failover Reconciled)");
+        setCrdtState((prev) => ({
+          ...prev,
+          currentEpoch: prev.currentEpoch + 1,
+          globalSequence: prev.globalSequence + 1,
+        }));
+        setTestConsoleOutput((prev) => [
+          ...prev,
+          `[AUTONOMOUS RECOVERY] 100% Zero-Loss State Reconstructed via Merkle Chain (1.82s SLA). Canonical hash: ${event.hash.slice(0, 18)}...`,
+        ]);
+
+        // Auto-dismiss the overlay after 4 seconds of successful recovery
+        if (dismissTimer) clearTimeout(dismissTimer);
+        dismissTimer = setTimeout(() => {
+          setLiveFailover((current) => (current?.status === "recovered" ? null : current));
+        }, 4000);
       }
-      if (!event) return;
+    };
 
-      const isTarget =
-        event.candidateId === currentStudentId ||
-        event.candidateId === "ALL" ||
-        event.candidateName?.toLowerCase().includes(currentStudent.name.toLowerCase()) ||
-        currentStudent.name.toLowerCase().includes(event.candidateName?.toLowerCase() || "");
-
-      if (isTarget) {
-        setLiveFailover(event);
-
-        if (event.status === "recovering") {
-          setIsOnline(false);
-          setOfflineBufferCount((prev) => prev + 1);
-          setTestConsoleOutput((prev) => [
-            ...prev,
-            `[FAILOVER INJECTED] Simulated socket drop & thread freeze. Offline buffering engaged in IndexedDB.`,
-          ]);
-        } else if (event.status === "recovered") {
-          setIsOnline(true);
-          setLastSavedHash(event.hash);
-          setLastSavedTime("Just now (Failover Reconciled)");
-          setCrdtState((prev) => ({
-            ...prev,
-            currentEpoch: prev.currentEpoch + 1,
-            globalSequence: prev.globalSequence + 1,
-          }));
-          setTestConsoleOutput((prev) => [
-            ...prev,
-            `[AUTONOMOUS RECOVERY] 100% Zero-Loss State Reconstructed via Merkle Chain (1.82s SLA). Canonical hash: ${event.hash.slice(0, 18)}...`,
-          ]);
+    // 1. Instant HTML5 BroadcastChannel
+    const channel = getFailoverBroadcastChannel();
+    if (channel) {
+      channel.onmessage = (msgEvent) => {
+        if (msgEvent.data?.type === "CLEAR") {
+          setLiveFailover(null);
+        } else if (msgEvent.data) {
+          processFailover(msgEvent.data as FailoverEvent);
         }
+      };
+    }
+
+    // 2. Window CustomEvent
+    const handleCustomEvent = (e: any) => {
+      if (e.detail) processFailover(e.detail as FailoverEvent);
+    };
+
+    // 3. Fallback StorageEvent
+    const handleStorageEvent = (e: StorageEvent) => {
+      if (e.key === FAILOVER_STORAGE_KEY && e.newValue) {
+        try {
+          processFailover(JSON.parse(e.newValue) as FailoverEvent);
+        } catch {}
+      } else if (e.key === FAILOVER_STORAGE_KEY && !e.newValue) {
+        setLiveFailover(null);
       }
     };
 
@@ -254,27 +275,26 @@ function StudentPortalContent() {
       setLiveFailover(null);
     };
 
-    window.addEventListener("revivex_failover_event", handleFailoverEvent);
+    window.addEventListener("revivex_failover_event", handleCustomEvent);
     window.addEventListener("revivex_failover_cleared", handleCleared);
-    window.addEventListener("storage", handleFailoverEvent);
+    window.addEventListener("storage", handleStorageEvent);
 
-    // Check on mount if an active failover occurred in the last 60 seconds
+    // Initial check on mount
     const existing = getActiveFailoverEvent();
-    if (existing && Date.now() - existing.timestamp < 60000) {
-      const isTarget =
-        existing.candidateId === currentStudentId ||
-        existing.candidateId === "ALL" ||
-        existing.candidateName?.toLowerCase().includes(currentStudent.name.toLowerCase()) ||
-        currentStudent.name.toLowerCase().includes(existing.candidateName?.toLowerCase() || "");
-      if (isTarget) {
-        setLiveFailover(existing);
-      }
+    if (existing && Date.now() - existing.timestamp < 30000) {
+      processFailover(existing);
     }
 
     return () => {
-      window.removeEventListener("revivex_failover_event", handleFailoverEvent);
+      if (dismissTimer) clearTimeout(dismissTimer);
+      if (channel) {
+        try {
+          channel.close();
+        } catch {}
+      }
+      window.removeEventListener("revivex_failover_event", handleCustomEvent);
       window.removeEventListener("revivex_failover_cleared", handleCleared);
-      window.removeEventListener("storage", handleFailoverEvent);
+      window.removeEventListener("storage", handleStorageEvent);
     };
   }, [currentStudentId, currentStudent.name]);
 
@@ -1911,6 +1931,146 @@ function StudentPortalContent() {
                 Done
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: PROMINENT CONNECTION INTERRUPTED / FAILOVER OVERLAY ================= */}
+      {liveFailover && (
+        <div className="fixed inset-0 z-50 bg-[#07111E]/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
+          <div className={`max-w-xl w-full rounded-3xl p-6 sm:p-9 border-2 ${
+            liveFailover.status === "recovering"
+              ? "border-amber-500/80 shadow-amber-500/20"
+              : "border-emerald-500/80 shadow-emerald-500/20"
+          } bg-[#0B192C] text-white shadow-2xl space-y-6 relative overflow-hidden`}>
+            
+            {/* Top ambient glow */}
+            <div className={`absolute -top-16 -right-16 w-48 h-48 rounded-full blur-3xl pointer-events-none ${
+              liveFailover.status === "recovering" ? "bg-amber-500/20" : "bg-emerald-500/20"
+            }`} />
+
+            <div className="flex items-start gap-4 relative z-10">
+              <div className={`h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 ${
+                liveFailover.status === "recovering"
+                  ? "bg-amber-500/20 text-amber-400 border border-amber-500/50 animate-pulse"
+                  : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50"
+              }`}>
+                {liveFailover.status === "recovering" ? (
+                  <WifiOff className="h-7 w-7 text-amber-400 animate-bounce" />
+                ) : (
+                  <CheckCircle2 className="h-7 w-7 text-emerald-400" />
+                )}
+              </div>
+
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <span className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full border font-bold uppercase tracking-wider ${
+                    liveFailover.status === "recovering"
+                      ? "bg-amber-500/20 text-amber-300 border-amber-400/40 animate-pulse"
+                      : "bg-emerald-950/60 text-emerald-300 border-emerald-500/40"
+                  }`}>
+                    {liveFailover.status === "recovering" ? "SOCKET QUORUM SEVERED • 1.82s SLA" : "RECOVERY VERIFIED • 0 LOSS"}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setLiveFailover(null);
+                      clearActiveFailoverEvent();
+                    }}
+                    className="text-slate-400 hover:text-white p-1 rounded-lg cursor-pointer"
+                    title="Dismiss"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <h3 className="font-heading text-xl sm:text-2xl font-extrabold text-white mt-1.5 leading-snug">
+                  {liveFailover.status === "recovering"
+                    ? "Connection Interrupted: Socket Dropped"
+                    : "Quorum Restored & State Re-Hydrated"}
+                </h3>
+                <p className="text-xs text-[#8AA4BE] mt-0.5">
+                  {liveFailover.status === "recovering"
+                    ? "ReviveX Multi-Tier storage has engaged. Offline 100Hz IndexedDB buffering is active."
+                    : "Zero data loss confirmed. CRDT monotonic registers reconciled with edge Merkle root."}
+                </p>
+              </div>
+            </div>
+
+            {/* Diagnostic Matrix Box */}
+            <div className="p-4 rounded-2xl bg-[#07111E] border border-[#1E3A5F] space-y-2.5 font-mono text-xs relative z-10">
+              <div className="flex justify-between text-[#8AA4BE]">
+                <span>Failure Mode:</span>
+                <span className="text-amber-300 font-bold">{liveFailover.failureReason}</span>
+              </div>
+              <div className="flex justify-between text-[#8AA4BE]">
+                <span>Client Storage Intercept:</span>
+                <span className="text-emerald-400 font-bold">IndexedDB Tier 1 (100Hz Buffering Active)</span>
+              </div>
+              <div className="flex justify-between text-[#8AA4BE]">
+                <span>CRDT Epoch / Seq:</span>
+                <span className="text-[#00A8FF] font-bold">E{crdtState.currentEpoch} • #{crdtState.globalSequence} (Preserved)</span>
+              </div>
+              {liveFailover.status === "recovered" && (
+                <div className="flex justify-between text-[#8AA4BE]">
+                  <span>Canonical SHA-256:</span>
+                  <span className="text-emerald-400 font-bold select-all break-all">{liveFailover.hash.slice(0, 24)}...</span>
+                </div>
+              )}
+            </div>
+
+            {/* Status-dependent Body */}
+            {liveFailover.status === "recovering" ? (
+              <div className="space-y-3 relative z-10">
+                <div className="flex justify-between font-mono text-xs text-[#8AA4BE]">
+                  <span>Reconstructing state from IndexedDB deltas...</span>
+                  <span className="text-amber-400 font-bold">1.82s SLA</span>
+                </div>
+                <div className="w-full h-3 rounded-full bg-[#1E3A5F] overflow-hidden p-0.5">
+                  <div className="h-full bg-gradient-to-r from-amber-500 via-[#00A8FF] to-emerald-400 rounded-full animate-pulse w-full duration-1000" />
+                </div>
+                <div className="flex items-center gap-2 text-[11px] text-slate-300 font-sans">
+                  <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping" />
+                  <span>Do not reload or close the tab. Your uncommitted keystrokes are safe and will be restored automatically.</span>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4 pt-1 relative z-10">
+                <div className="p-3.5 rounded-xl bg-emerald-950/50 border border-emerald-500/40 text-emerald-300 text-xs font-mono flex items-center gap-2.5">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <span>State re-hydrated in {liveFailover.durationMs}ms. Zero silent loss verified. You may resume your examination.</span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLiveFailover(null);
+                      clearActiveFailoverEvent();
+                    }}
+                    className="btn-cyan flex-1 justify-center py-3 text-xs font-heading font-extrabold cursor-pointer shadow-lg"
+                  >
+                    <span>Resume Examination</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedProofModal({
+                        examTitle: `${activeExam.code}: Failover Recovery Ledger`,
+                        score: "100% Match (0 B Lost)",
+                        token: liveFailover.hash,
+                        date: new Date(liveFailover.timestamp).toLocaleTimeString(),
+                      });
+                    }}
+                    className="px-5 py-3 rounded-full border border-[#1E3A5F] bg-[#07111E] text-xs font-mono font-bold text-[#00A8FF] hover:text-white transition-colors cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    <span>Inspect Merkle Proof</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
       )}
