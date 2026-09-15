@@ -46,11 +46,11 @@ export function computeNtpOffset(
 
 // Perform a simulated NTP handshake with simulated edge node
 export function syncWithServer(simulatedServerLagMs = 18): TimeSyncMetadata {
-  const t1 = performance.now();
   const now = Date.now();
+  const t1 = now;
   const t2 = now + simulatedServerLagMs;
   const t3 = t2 + 2; // 2ms server processing
-  const t4 = t1 + simulatedServerLagMs * 2 + 2;
+  const t4 = now + simulatedServerLagMs * 2 + 2;
 
   return computeNtpOffset(t1, t2, t3, t4);
 }

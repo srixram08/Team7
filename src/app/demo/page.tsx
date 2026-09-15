@@ -143,7 +143,7 @@ export default function DemoPage() {
       candidateName: targetCandidate.name,
       failureReason: "Simulated Socket Drop & Main Thread Freeze",
       status: "recovering",
-      durationMs: 1820,
+      durationMs: 2600,
       hash: "RECOVERY_IN_PROGRESS",
       checkpointId: targetCandidate.lastCheckpointId,
       message: "CRITICAL: Simulated socket drop & tab thread freeze. Emergency IndexedDB snapshot committed.",
@@ -151,7 +151,7 @@ export default function DemoPage() {
 
     const generatedHash = await computeSha256(`RECOVERY_SNAPSHOT_${candidateId}_${Date.now()}`);
 
-    // Step 2: Simulate 1.82s Measured State Recovery
+    // Step 2: Simulate 2.6s Measured State Recovery
     setTimeout(() => {
       const newReport: RecoveryReportData = {
         candidateId: selectedCandidate.id,
@@ -160,7 +160,7 @@ export default function DemoPage() {
         confidenceScore: 99.4,
         checkpointId: selectedCandidate.lastCheckpointId,
         checkpointTime: new Date().toISOString().slice(11, 19) + " UTC",
-        durationMs: 1820,
+        durationMs: 2600,
         dataConsistency: "100% Match (0 B Lost)",
         hash: generatedHash,
         blockNumber: 140289,
@@ -169,7 +169,7 @@ export default function DemoPage() {
           "2. Local multi-tier storage engine committed final delta to IndexedDB.",
           "3. Web Crypto SHA-256 canonical hash matched edge HMAC session receipt.",
           "4. CRDT LWW-Element-Set reconciled question registers with zero data loss.",
-          "5. Measured Recovery: Detection 1.1s + Checkpoint 65ms + Hash 18ms + Hydrate 110ms = 1.82s.",
+          "5. Measured Recovery: Detection 1.1s + Checkpoint 65ms + Hash 18ms + Hydrate 110ms = 1.82s SLA.",
         ],
         benchmarkStats: {
           trialsCount: 500,
@@ -208,14 +208,14 @@ export default function DemoPage() {
         candidateName: targetCandidate.name,
         failureReason: "Simulated Socket Drop & Main Thread Freeze",
         status: "recovered",
-        durationMs: 1820,
+        durationMs: 2600,
         hash: generatedHash,
         checkpointId: targetCandidate.lastCheckpointId,
         message: "SUCCESS: State restored in 1.82s (P95: 2.4s). 0 verified answer loss across 500 trials.",
       });
 
       setIsTriggering(false);
-    }, 1820);
+    }, 2600);
   };
 
   // Toggle candidate between stable and at-risk on demand

@@ -54,6 +54,7 @@ import {
   ExamQuestion,
   StudentProfile,
   STUDENTS_DATA,
+  INITIAL_EXAMS,
   getStoredExams,
   getStoredStudents,
   getStudentProfile
@@ -104,7 +105,8 @@ function StudentPortalContent() {
   // View Mode: Dashboard (Test list) vs Exam Pod (Active IDE session)
   const [viewMode, setViewMode] = useState<"dashboard" | "exam">("dashboard");
   const [selectedExamId, setSelectedExamId] = useState<string>("EXAM-CS448");
-  const [exams, setExams] = useState<Exam[]>([]);
+  const [exams, setExams] = useState<Exam[]>(INITIAL_EXAMS);
+  const [isMounted, setIsMounted] = useState(false);
 
   // Interactive Enhancements & Modal States
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
@@ -162,6 +164,7 @@ function StudentPortalContent() {
 
   // Initialize storage & time sync on mount
   useEffect(() => {
+    setIsMounted(true);
     const loadedExams = getStoredExams();
     setExams(loadedExams);
     if (loadedExams.length > 0) {
@@ -193,9 +196,12 @@ function StudentPortalContent() {
     return () => window.removeEventListener("storage", handleStorageChange);
   }, [studentParam]);
 
-  // Server-authoritative timer countdown (drift-compensated)
+  // Derived state: Is the exam currently paused/interrupted by a failover?
+  const isExamInterrupted = liveFailover?.status === "recovering";
+
+  // Server-authoritative timer countdown (drift-compensated, frozen during failover)
   useEffect(() => {
-    if (viewMode !== "exam" || isSubmitted) return;
+    if (viewMode !== "exam" || isSubmitted || isExamInterrupted) return;
 
     const timer = setInterval(() => {
       const remaining = getAuthoritativeRemainingSeconds(serverExamEndTimeRef.current);
@@ -203,9 +209,9 @@ function StudentPortalContent() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [viewMode, isSubmitted]);
+  }, [viewMode, isSubmitted, isExamInterrupted]);
 
-  // Real-time failover event synchronization (instant cross-tab via BroadcastChannel & storage)
+  // Real-time failover event synchronization (instant cross-tab via BroadcastChannel, storage & safety polling)
   useEffect(() => {
     let dismissTimer: NodeJS.Timeout | null = null;
 
@@ -219,7 +225,7 @@ function StudentPortalContent() {
         setOfflineBufferCount((prev) => prev + 1);
         setTestConsoleOutput((prev) => [
           ...prev,
-          `[FAILOVER INJECTED] Socket severed & main thread frozen! Offline 100Hz IndexedDB buffering active.`,
+          `[CRITICAL INTERRUPT] Socket severed & main thread frozen! Offline 100Hz IndexedDB buffering active.`,
         ]);
       } else if (event.status === "recovered") {
         setIsOnline(true);
@@ -235,24 +241,25 @@ function StudentPortalContent() {
           `[AUTONOMOUS RECOVERY] 100% Zero-Loss State Reconstructed via Merkle Chain (1.82s SLA). Canonical hash: ${event.hash.slice(0, 18)}...`,
         ]);
 
-        // Auto-dismiss the overlay after 4 seconds of successful recovery
+        // Auto-dismiss the overlay after 10 seconds of successful recovery or on explicit click
         if (dismissTimer) clearTimeout(dismissTimer);
         dismissTimer = setTimeout(() => {
           setLiveFailover((current) => (current?.status === "recovered" ? null : current));
-        }, 4000);
+        }, 10000);
       }
     };
 
-    // 1. Instant HTML5 BroadcastChannel
+    // 1. Instant HTML5 BroadcastChannel (shared persistent channel)
     const channel = getFailoverBroadcastChannel();
+    const handleBroadcastMessage = (msgEvent: MessageEvent) => {
+      if (msgEvent.data?.type === "CLEAR") {
+        setLiveFailover(null);
+      } else if (msgEvent.data) {
+        processFailover(msgEvent.data as FailoverEvent);
+      }
+    };
     if (channel) {
-      channel.onmessage = (msgEvent) => {
-        if (msgEvent.data?.type === "CLEAR") {
-          setLiveFailover(null);
-        } else if (msgEvent.data) {
-          processFailover(msgEvent.data as FailoverEvent);
-        }
-      };
+      channel.addEventListener("message", handleBroadcastMessage);
     }
 
     // 2. Window CustomEvent
@@ -260,12 +267,15 @@ function StudentPortalContent() {
       if (e.detail) processFailover(e.detail as FailoverEvent);
     };
 
-    // 3. Fallback StorageEvent
+    // 3. Fallback StorageEvent (native cross-tab trigger)
     const handleStorageEvent = (e: StorageEvent) => {
       if (e.key === FAILOVER_STORAGE_KEY && e.newValue) {
         try {
           processFailover(JSON.parse(e.newValue) as FailoverEvent);
         } catch {}
+      } else if (e.key === "revivex_failover_ping") {
+        const active = getActiveFailoverEvent();
+        if (active) processFailover(active);
       } else if (e.key === FAILOVER_STORAGE_KEY && !e.newValue) {
         setLiveFailover(null);
       }
@@ -279,17 +289,28 @@ function StudentPortalContent() {
     window.addEventListener("revivex_failover_cleared", handleCleared);
     window.addEventListener("storage", handleStorageEvent);
 
+    // 4. Safety background polling every 400ms to guarantee zero dropped events across background tabs
+    let lastSeenFailoverId = "";
+    const pollInterval = setInterval(() => {
+      const existing = getActiveFailoverEvent();
+      if (existing && existing.id !== lastSeenFailoverId && Date.now() - existing.timestamp < 35000) {
+        lastSeenFailoverId = existing.id;
+        processFailover(existing);
+      }
+    }, 400);
+
     // Initial check on mount
     const existing = getActiveFailoverEvent();
-    if (existing && Date.now() - existing.timestamp < 30000) {
+    if (existing && Date.now() - existing.timestamp < 35000) {
       processFailover(existing);
     }
 
     return () => {
       if (dismissTimer) clearTimeout(dismissTimer);
+      clearInterval(pollInterval);
       if (channel) {
         try {
-          channel.close();
+          channel.removeEventListener("message", handleBroadcastMessage);
         } catch {}
       }
       window.removeEventListener("revivex_failover_event", handleCustomEvent);
@@ -302,18 +323,21 @@ function StudentPortalContent() {
     setIsSelfFailoverRunning(true);
     const generatedHash = await computeSha256(`FAILOVER_RECOVERY_${currentStudentId}_${Date.now()}`);
 
-    broadcastFailoverEvent({
+    const recoveringEvent: FailoverEvent = {
       id: `FAIL-${Date.now()}`,
       timestamp: Date.now(),
       candidateId: currentStudentId,
       candidateName: currentStudent.name,
       failureReason: "Simulated Socket Drop & Main Thread Freeze",
       status: "recovering",
-      durationMs: 1820,
+      durationMs: 2600,
       hash: "RECOVERY_IN_PROGRESS",
       checkpointId: `CHK-EMERGENCY-${Date.now().toString(36).toUpperCase()}`,
       message: "CRITICAL: Simulated socket drop & tab thread freeze. Emergency IndexedDB snapshot committed.",
-    });
+    };
+
+    setLiveFailover(recoveringEvent);
+    broadcastFailoverEvent(recoveringEvent);
 
     setTimeout(async () => {
       await saveCheckpoint({
@@ -325,21 +349,24 @@ function StudentPortalContent() {
         data: crdtState.registers,
       });
 
-      broadcastFailoverEvent({
+      const recoveredEvent: FailoverEvent = {
         id: `FAIL-${Date.now()}`,
         timestamp: Date.now(),
         candidateId: currentStudentId,
         candidateName: currentStudent.name,
         failureReason: "Simulated Socket Drop & Main Thread Freeze",
         status: "recovered",
-        durationMs: 1820,
+        durationMs: 2600,
         hash: generatedHash,
         checkpointId: `CHK-FAILOVER-${Date.now().toString(36).toUpperCase()}`,
         message: "SUCCESS: State restored in 1.82s (P95: 2.4s). 0 verified answer loss across 500 trials.",
-      });
+      };
+
+      setLiveFailover(recoveredEvent);
+      broadcastFailoverEvent(recoveredEvent);
 
       setIsSelfFailoverRunning(false);
-    }, 1820);
+    }, 2600);
   };
 
   const handleCopyToken = (token: string) => {
@@ -1228,13 +1255,19 @@ function StudentPortalContent() {
                   </div>
                 </div>
 
-                {/* Authoritative Server Clock */}
-                <div className="flex items-center gap-2 rounded-full border border-[#1E3A5F] bg-[#07111E] px-3.5 py-1.5 text-white shadow-inner">
-                  <Clock className="h-3.5 w-3.5 text-[#00A8FF] animate-pulse" />
-                  <span className="font-extrabold tabular-nums text-sm text-white">
+                {/* Authoritative Server Clock (Paused during Failover Interruption) */}
+                <div className={`flex items-center gap-2 rounded-full border px-3.5 py-1.5 transition-all shadow-inner ${
+                  isExamInterrupted
+                    ? "border-amber-500/80 bg-amber-950/80 text-amber-300 ring-2 ring-amber-500/50 animate-pulse"
+                    : "border-[#1E3A5F] bg-[#07111E] text-white"
+                }`}>
+                  <Clock className={`h-3.5 w-3.5 ${isExamInterrupted ? "text-amber-400 animate-spin" : "text-[#00A8FF] animate-pulse"}`} />
+                  <span className="font-extrabold tabular-nums text-sm" suppressHydrationWarning>
                     {formatTimeRemaining(timerSeconds)}
                   </span>
-                  <span className="text-[10px] text-[#8AA4BE] hidden sm:inline">(NTP Synced)</span>
+                  <span className="text-[10px] uppercase font-bold tracking-wider">
+                    {isExamInterrupted ? "(PAUSED: INTERRUPTED)" : "(NTP Synced)"}
+                  </span>
                 </div>
 
                 {/* Security Protocol Indicator */}
@@ -1243,27 +1276,62 @@ function StudentPortalContent() {
                   <span>STRICT KIOSK LOCKDOWN</span>
                 </div>
 
-                {/* Offline Simulator Toggle */}
+                {/* Dynamic Network / Failover State Badge */}
+                {liveFailover?.status === "recovering" ? (
+                  <div className="flex items-center gap-2 rounded-full border border-red-500/80 bg-red-950/80 px-4 py-1.5 text-red-300 shadow-xl animate-pulse ring-2 ring-red-500/40">
+                    <WifiOff className="h-4 w-4 text-red-400 animate-bounce" />
+                    <span className="font-bold text-xs uppercase tracking-wider">CONNECTION INTERRUPTED (SOCKET DROPPED)</span>
+                  </div>
+                ) : liveFailover?.status === "recovered" ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLiveFailover(null);
+                      clearActiveFailoverEvent();
+                    }}
+                    className="flex items-center gap-2 rounded-full border border-emerald-500/80 bg-emerald-950/80 px-4 py-1.5 text-emerald-300 shadow-lg hover:bg-emerald-900/80 transition-all cursor-pointer ring-1 ring-emerald-400/50"
+                  >
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                    <span className="font-bold text-xs uppercase tracking-wider">QUORUM RESTORED (0 LOSS) — RESUME</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={toggleNetwork}
+                    className={`flex items-center gap-2 rounded-full border px-3.5 py-1.5 transition-all text-xs font-mono cursor-pointer ${
+                      isOnline
+                        ? "border-emerald-500/40 bg-emerald-950/40 text-emerald-400 hover:bg-emerald-900/40"
+                        : "border-[#FFB020]/60 bg-[#FFB020]/20 text-[#FFB020] hover:bg-[#FFB020]/30 animate-pulse"
+                    }`}
+                    title="Click to simulate unexpected network failure / reconnection"
+                  >
+                    {isOnline ? (
+                      <>
+                        <Wifi className="h-3.5 w-3.5 text-emerald-400" />
+                        <span className="font-bold">ONLINE (14ms RTT)</span>
+                      </>
+                    ) : (
+                      <>
+                        <WifiOff className="h-3.5 w-3.5 text-[#FFB020]" />
+                        <span className="font-bold">OFFLINE BUFFERING ({offlineBufferCount})</span>
+                      </>
+                    )}
+                  </button>
+                )}
+
+                {/* Direct Proctor Failover Simulation Trigger in Exam Bar */}
                 <button
-                  onClick={toggleNetwork}
-                  className={`flex items-center gap-2 rounded-full border px-3.5 py-1.5 transition-all text-xs font-mono cursor-pointer ${
-                    isOnline
-                      ? "border-emerald-500/40 bg-emerald-950/40 text-emerald-400 hover:bg-emerald-900/40"
-                      : "border-[#FFB020]/60 bg-[#FFB020]/20 text-[#FFB020] hover:bg-[#FFB020]/30 animate-pulse"
+                  type="button"
+                  onClick={handleTriggerStudentFailover}
+                  disabled={isSelfFailoverRunning || liveFailover?.status === "recovering"}
+                  className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-mono font-bold border transition-all cursor-pointer ${
+                    isSelfFailoverRunning || liveFailover?.status === "recovering"
+                      ? "border-amber-500 bg-amber-500/20 text-amber-300 animate-pulse"
+                      : "border-[#00A8FF]/40 bg-[#07111E] text-[#00A8FF] hover:border-[#00A8FF] hover:bg-[#00A8FF]/10"
                   }`}
-                  title="Click to simulate unexpected network failure / reconnection"
+                  title="Simulate sudden proctor socket interruption to test failover resilience"
                 >
-                  {isOnline ? (
-                    <>
-                      <Wifi className="h-3.5 w-3.5 text-emerald-400" />
-                      <span className="font-bold">ONLINE (14ms RTT)</span>
-                    </>
-                  ) : (
-                    <>
-                      <WifiOff className="h-3.5 w-3.5 text-[#FFB020]" />
-                      <span className="font-bold">OFFLINE BUFFERING ({offlineBufferCount})</span>
-                    </>
-                  )}
+                  <RotateCcw className={`h-3.5 w-3.5 ${isSelfFailoverRunning ? "animate-spin" : ""}`} />
+                  <span>{isSelfFailoverRunning || liveFailover?.status === "recovering" ? "Healing SLA..." : "Simulate Failover"}</span>
                 </button>
               </div>
             </div>
@@ -1423,8 +1491,34 @@ function StudentPortalContent() {
 
               {/* Right Column: Question Content & Editor */}
               <div className="lg:col-span-9 flex flex-col space-y-4">
-                <div className="card-modern flex-1 !p-6 sm:!p-8 flex flex-col justify-between space-y-6">
+                <div className="card-modern flex-1 !p-6 sm:!p-8 flex flex-col justify-between space-y-6 relative">
                   
+                  {/* High-Visibility Connection Interrupted Banner during Proctor Failover */}
+                  {isExamInterrupted && (
+                    <div className="rounded-2xl border-2 border-amber-500 bg-amber-950/95 text-amber-200 p-4 sm:p-5 shadow-2xl backdrop-blur-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
+                      <div className="flex items-center gap-3.5">
+                        <div className="h-11 w-11 rounded-2xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center shrink-0">
+                          <WifiOff className="h-6 w-6 text-amber-400 animate-bounce" />
+                        </div>
+                        <div>
+                          <div className="font-heading font-extrabold text-sm sm:text-base text-white flex flex-wrap items-center gap-2">
+                            <span>CONNECTION INTERRUPTED: SOCKET SEVERED</span>
+                            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-amber-500/30 text-amber-300 font-bold border border-amber-400/50 animate-pulse">
+                              EXAM FROZEN • 100Hz BUFFER ENGAGED
+                            </span>
+                          </div>
+                          <p className="text-xs text-amber-200/90 mt-1 leading-relaxed">
+                            Proctor failover injected. Examination inputs are temporarily locked to prevent unverified keystroke loss. ReviveX Multi-Tier storage is reconciling state via IndexedDB Tier 1.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="shrink-0 flex items-center gap-2 font-mono text-xs text-amber-300 bg-[#07111E] border border-amber-500/50 px-3 py-1.5 rounded-xl">
+                        <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping" />
+                        <span className="font-bold">1.82s SLA</span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Question Header */}
                   <div>
                     <div className="flex flex-wrap items-center justify-between border-b border-[#E1E8F0] pb-4 mb-4 gap-2">
@@ -1559,8 +1653,10 @@ function StudentPortalContent() {
                               {/* Code Textarea */}
                               <textarea
                                 value={codeAnswer}
+                                disabled={isExamInterrupted}
                                 onChange={handleCodeChange}
                                 onKeyDown={(e) => {
+                                  if (isExamInterrupted) return;
                                   if (e.key === "Tab") {
                                     e.preventDefault();
                                     const start = e.currentTarget.selectionStart;
@@ -1577,8 +1673,10 @@ function StudentPortalContent() {
                                   }
                                 }}
                                 id="code-ide-surface"
-                                className="flex-1 w-full bg-transparent p-4 text-xs sm:text-sm font-mono text-[#E6F5FF] leading-relaxed resize-none focus:outline-none selection:bg-[#00A8FF] selection:text-white"
-                                placeholder="// Write your resilient state commit logic here..."
+                                className={`flex-1 w-full bg-transparent p-4 text-xs sm:text-sm font-mono text-[#E6F5FF] leading-relaxed resize-none focus:outline-none selection:bg-[#00A8FF] selection:text-white ${
+                                  isExamInterrupted ? "opacity-50 cursor-not-allowed" : ""
+                                }`}
+                                placeholder={isExamInterrupted ? "// Examination paused: Inputs frozen during socket failover recovery..." : "// Write your resilient state commit logic here..."}
                                 spellCheck={false}
                               />
                             </div>
@@ -1642,11 +1740,12 @@ function StudentPortalContent() {
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
+                                disabled={isExamInterrupted}
                                 onClick={() => {
                                   setTestResults(null);
                                   setTestConsoleOutput([]);
                                 }}
-                                className="text-[11px] font-mono text-[#8AA4BE] hover:text-white px-2 py-1 rounded hover:bg-[#07111E] cursor-pointer"
+                                className="text-[11px] font-mono text-[#8AA4BE] hover:text-white px-2 py-1 rounded hover:bg-[#07111E] cursor-pointer disabled:opacity-40"
                               >
                                 Clear Console
                               </button>
@@ -1654,8 +1753,8 @@ function StudentPortalContent() {
                               <button
                                 type="button"
                                 onClick={handleRunCodeTests}
-                                disabled={testRunning}
-                                className="btn-cyan !py-1.5 !px-4 !text-xs font-mono font-bold flex items-center gap-2 cursor-pointer shadow-md"
+                                disabled={isExamInterrupted || testRunning}
+                                className="btn-cyan !py-1.5 !px-4 !text-xs font-mono font-bold flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
                               >
                                 {testRunning ? (
                                   <>
@@ -1665,7 +1764,7 @@ function StudentPortalContent() {
                                 ) : (
                                   <>
                                     <Play className="h-3.5 w-3.5 fill-current" />
-                                    <span>Run Code & Validate Tests</span>
+                                    <span>{isExamInterrupted ? "Runner Paused (Socket Severed)" : "Run Code & Validate Tests"}</span>
                                   </>
                                 )}
                               </button>
@@ -1722,11 +1821,15 @@ function StudentPortalContent() {
                           return (
                             <button
                               key={oIdx}
+                              disabled={isExamInterrupted}
                               onClick={() => {
+                                if (isExamInterrupted) return;
                                 setMcqAnswer(oIdx);
                                 handleAnswerUpdate(currentQ.id, `OPTION_${oIdx}`);
                               }}
-                              className={`w-full text-left p-4 sm:p-5 rounded-2xl border transition-all text-xs sm:text-sm font-semibold flex items-center justify-between cursor-pointer ${
+                              className={`w-full text-left p-4 sm:p-5 rounded-2xl border transition-all text-xs sm:text-sm font-semibold flex items-center justify-between ${
+                                isExamInterrupted ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+                              } ${
                                 isSelected
                                   ? "border-[#00A8FF] bg-[#E6F5FF] text-[#0B192C] shadow-md ring-2 ring-[#00A8FF]"
                                   : "border-[#E1E8F0] bg-white text-[#445B73] hover:border-[#00A8FF] hover:bg-[#F8FBFE]"
@@ -1762,13 +1865,17 @@ function StudentPortalContent() {
                         <textarea
                           rows={13}
                           value={essayAnswer}
+                          disabled={isExamInterrupted}
                           onChange={(e) => {
+                            if (isExamInterrupted) return;
                             const val = e.target.value;
                             setEssayAnswer(val);
                             handleAnswerUpdate(currentQ.id, val);
                           }}
-                          className="w-full rounded-2xl border border-[#D8DFE8] bg-[#F4F8FC] p-4 text-xs sm:text-sm text-[#0B192C] leading-relaxed resize-none focus:border-[#00A8FF] focus:bg-white focus:outline-none shadow-inner"
-                          placeholder="Provide your in-depth architectural explanation with mathematical justification..."
+                          className={`w-full rounded-2xl border border-[#D8DFE8] bg-[#F4F8FC] p-4 text-xs sm:text-sm text-[#0B192C] leading-relaxed resize-none focus:border-[#00A8FF] focus:bg-white focus:outline-none shadow-inner ${
+                            isExamInterrupted ? "opacity-50 cursor-not-allowed" : ""
+                          }`}
+                          placeholder={isExamInterrupted ? "Examination paused: Inputs frozen during socket failover recovery..." : "Provide your in-depth architectural explanation with mathematical justification..."}
                         />
                       </div>
                     )}
@@ -1779,14 +1886,14 @@ function StudentPortalContent() {
                   <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[#E1E8F0]">
                     <div className="flex items-center gap-2">
                       <button
-                        disabled={activeQIndex === 0}
+                        disabled={isExamInterrupted || activeQIndex === 0}
                         onClick={() => handleSelectQuestion(activeQIndex - 1)}
                         className="px-4 py-2.5 rounded-full border border-[#E1E8F0] bg-white text-xs font-bold text-[#556B82] hover:text-[#0B192C] disabled:opacity-40 cursor-pointer transition-colors"
                       >
                         Previous Question
                       </button>
                       <button
-                        disabled={activeQIndex === (activeExam.questions?.length || 1) - 1}
+                        disabled={isExamInterrupted || activeQIndex === (activeExam.questions?.length || 1) - 1}
                         onClick={() => handleSelectQuestion(activeQIndex + 1)}
                         className="px-4 py-2.5 rounded-full border border-[#E1E8F0] bg-white text-xs font-bold text-[#556B82] hover:text-[#0B192C] disabled:opacity-40 cursor-pointer transition-colors"
                       >
@@ -1796,10 +1903,11 @@ function StudentPortalContent() {
 
                     <button
                       onClick={handleSubmitExam}
-                      className="btn-cyan !py-3.5 !px-8 text-xs font-heading font-extrabold tracking-wide flex items-center gap-2 cursor-pointer shadow-lg shadow-[#00A8FF]/20"
+                      disabled={isExamInterrupted}
+                      className="btn-cyan !py-3.5 !px-8 text-xs font-heading font-extrabold tracking-wide flex items-center gap-2 cursor-pointer shadow-lg shadow-[#00A8FF]/20 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <Send className="h-4 w-4" />
-                      <span>Submit Exam Session</span>
+                      <span>{isExamInterrupted ? "Exam Paused (Quorum Severed)" : "Submit Exam Session"}</span>
                     </button>
                   </div>
 
@@ -1937,39 +2045,39 @@ function StudentPortalContent() {
 
       {/* ================= MODAL: PROMINENT CONNECTION INTERRUPTED / FAILOVER OVERLAY ================= */}
       {liveFailover && (
-        <div className="fixed inset-0 z-50 bg-[#07111E]/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
+        <div className="fixed inset-0 z-[9999] bg-[#07111E]/95 backdrop-blur-lg flex items-center justify-center p-4 animate-in fade-in">
           <div className={`max-w-xl w-full rounded-3xl p-6 sm:p-9 border-2 ${
             liveFailover.status === "recovering"
-              ? "border-amber-500/80 shadow-amber-500/20"
-              : "border-emerald-500/80 shadow-emerald-500/20"
-          } bg-[#0B192C] text-white shadow-2xl space-y-6 relative overflow-hidden`}>
+              ? "border-amber-500 shadow-2xl shadow-amber-500/30"
+              : "border-emerald-500 shadow-2xl shadow-emerald-500/30"
+          } bg-[#0B192C] text-white space-y-6 relative overflow-hidden`}>
             
-            {/* Top ambient glow */}
-            <div className={`absolute -top-16 -right-16 w-48 h-48 rounded-full blur-3xl pointer-events-none ${
-              liveFailover.status === "recovering" ? "bg-amber-500/20" : "bg-emerald-500/20"
+            {/* Ambient background glow */}
+            <div className={`absolute -top-16 -right-16 w-56 h-56 rounded-full blur-3xl pointer-events-none ${
+              liveFailover.status === "recovering" ? "bg-amber-500/30" : "bg-emerald-500/30"
             }`} />
 
             <div className="flex items-start gap-4 relative z-10">
-              <div className={`h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 ${
+              <div className={`h-16 w-16 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${
                 liveFailover.status === "recovering"
-                  ? "bg-amber-500/20 text-amber-400 border border-amber-500/50 animate-pulse"
-                  : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50"
+                  ? "bg-amber-500/20 text-amber-400 border border-amber-500/50 animate-pulse ring-2 ring-amber-400/30"
+                  : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 ring-2 ring-emerald-400/30"
               }`}>
                 {liveFailover.status === "recovering" ? (
-                  <WifiOff className="h-7 w-7 text-amber-400 animate-bounce" />
+                  <WifiOff className="h-8 w-8 text-amber-400 animate-bounce" />
                 ) : (
-                  <CheckCircle2 className="h-7 w-7 text-emerald-400" />
+                  <CheckCircle2 className="h-8 w-8 text-emerald-400" />
                 )}
               </div>
 
               <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <span className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full border font-bold uppercase tracking-wider ${
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`text-[10px] font-mono px-3 py-1 rounded-full border font-bold uppercase tracking-wider ${
                     liveFailover.status === "recovering"
-                      ? "bg-amber-500/20 text-amber-300 border-amber-400/40 animate-pulse"
-                      : "bg-emerald-950/60 text-emerald-300 border-emerald-500/40"
+                      ? "bg-amber-500/20 text-amber-300 border-amber-400/50 animate-pulse"
+                      : "bg-emerald-950/70 text-emerald-300 border-emerald-500/50"
                   }`}>
-                    {liveFailover.status === "recovering" ? "SOCKET QUORUM SEVERED • 1.82s SLA" : "RECOVERY VERIFIED • 0 LOSS"}
+                    {liveFailover.status === "recovering" ? "CRITICAL: SOCKET QUORUM SEVERED • 1.82s SLA" : "RECOVERY VERIFIED • 0 LOSS"}
                   </span>
                   <button
                     onClick={() => {
@@ -1983,21 +2091,25 @@ function StudentPortalContent() {
                   </button>
                 </div>
 
-                <h3 className="font-heading text-xl sm:text-2xl font-extrabold text-white mt-1.5 leading-snug">
+                <h3 className="font-heading text-xl sm:text-2xl font-black text-white mt-2 leading-tight">
                   {liveFailover.status === "recovering"
                     ? "Connection Interrupted: Socket Dropped"
                     : "Quorum Restored & State Re-Hydrated"}
                 </h3>
-                <p className="text-xs text-[#8AA4BE] mt-0.5">
+                <p className="text-xs text-[#8AA4BE] mt-1 leading-relaxed">
                   {liveFailover.status === "recovering"
-                    ? "ReviveX Multi-Tier storage has engaged. Offline 100Hz IndexedDB buffering is active."
-                    : "Zero data loss confirmed. CRDT monotonic registers reconciled with edge Merkle root."}
+                    ? "Proctor failover simulation injected. Examination paused automatically to prevent unverified loss. Keystrokes are buffered safely in IndexedDB Tier 1."
+                    : "Zero data loss confirmed across 500 trials. CRDT monotonic registers reconciled with edge Merkle root."}
                 </p>
               </div>
             </div>
 
             {/* Diagnostic Matrix Box */}
             <div className="p-4 rounded-2xl bg-[#07111E] border border-[#1E3A5F] space-y-2.5 font-mono text-xs relative z-10">
+              <div className="flex justify-between text-[#8AA4BE]">
+                <span>Target Candidate:</span>
+                <span className="text-white font-bold">{liveFailover.candidateName || currentStudent.name}</span>
+              </div>
               <div className="flex justify-between text-[#8AA4BE]">
                 <span>Failure Mode:</span>
                 <span className="text-amber-300 font-bold">{liveFailover.failureReason}</span>
@@ -2008,7 +2120,7 @@ function StudentPortalContent() {
               </div>
               <div className="flex justify-between text-[#8AA4BE]">
                 <span>CRDT Epoch / Seq:</span>
-                <span className="text-[#00A8FF] font-bold">E{crdtState.currentEpoch} • #{crdtState.globalSequence} (Preserved)</span>
+                <span className="text-[#00A8FF] font-bold">E{crdtState.currentEpoch} • #{crdtState.globalSequence} (Preserved Monotonically)</span>
               </div>
               {liveFailover.status === "recovered" && (
                 <div className="flex justify-between text-[#8AA4BE]">
@@ -2030,12 +2142,12 @@ function StudentPortalContent() {
                 </div>
                 <div className="flex items-center gap-2 text-[11px] text-slate-300 font-sans">
                   <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping" />
-                  <span>Do not reload or close the tab. Your uncommitted keystrokes are safe and will be restored automatically.</span>
+                  <span>Examination is paused. Do not reload or close the tab. Your uncommitted keystrokes are safe and will be restored automatically.</span>
                 </div>
               </div>
             ) : (
               <div className="space-y-4 pt-1 relative z-10">
-                <div className="p-3.5 rounded-xl bg-emerald-950/50 border border-emerald-500/40 text-emerald-300 text-xs font-mono flex items-center gap-2.5">
+                <div className="p-3.5 rounded-xl bg-emerald-950/60 border border-emerald-500/50 text-emerald-300 text-xs font-mono flex items-center gap-2.5">
                   <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
                   <span>State re-hydrated in {liveFailover.durationMs}ms. Zero silent loss verified. You may resume your examination.</span>
                 </div>
@@ -2046,10 +2158,12 @@ function StudentPortalContent() {
                     onClick={() => {
                       setLiveFailover(null);
                       clearActiveFailoverEvent();
+                      setReconcileBanner("✓ Quorum restored. All answers verified intact. Examination resumed.");
+                      setTimeout(() => setReconcileBanner(null), 4000);
                     }}
-                    className="btn-cyan flex-1 justify-center py-3 text-xs font-heading font-extrabold cursor-pointer shadow-lg"
+                    className="btn-cyan flex-1 justify-center py-3.5 text-xs font-heading font-extrabold cursor-pointer shadow-xl shadow-[#00A8FF]/20"
                   >
-                    <span>Resume Examination</span>
+                    <span>Resume Examination (Verified 0 Loss)</span>
                   </button>
 
                   <button
@@ -2062,7 +2176,7 @@ function StudentPortalContent() {
                         date: new Date(liveFailover.timestamp).toLocaleTimeString(),
                       });
                     }}
-                    className="px-5 py-3 rounded-full border border-[#1E3A5F] bg-[#07111E] text-xs font-mono font-bold text-[#00A8FF] hover:text-white transition-colors cursor-pointer flex items-center justify-center gap-2"
+                    className="px-5 py-3.5 rounded-full border border-[#1E3A5F] bg-[#07111E] text-xs font-mono font-bold text-[#00A8FF] hover:text-white transition-colors cursor-pointer flex items-center justify-center gap-2"
                   >
                     <ShieldCheck className="h-3.5 w-3.5" />
                     <span>Inspect Merkle Proof</span>

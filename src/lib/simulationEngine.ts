@@ -196,10 +196,15 @@ export interface FailoverEvent {
 export const FAILOVER_STORAGE_KEY = "revivex_active_failover_event";
 export const FAILOVER_CHANNEL_NAME = "revivex_failover_bus";
 
+let sharedBroadcastChannel: BroadcastChannel | null = null;
+
 export function getFailoverBroadcastChannel(): BroadcastChannel | null {
   if (typeof window === "undefined" || !("BroadcastChannel" in window)) return null;
   try {
-    return new BroadcastChannel(FAILOVER_CHANNEL_NAME);
+    if (!sharedBroadcastChannel) {
+      sharedBroadcastChannel = new BroadcastChannel(FAILOVER_CHANNEL_NAME);
+    }
+    return sharedBroadcastChannel;
   } catch {
     return null;
   }
@@ -210,18 +215,19 @@ export function broadcastFailoverEvent(event: FailoverEvent) {
   try {
     const serialized = JSON.stringify(event);
     localStorage.setItem(FAILOVER_STORAGE_KEY, serialized);
+    // Ping key to force cross-tab StorageEvent even if serialized payload is identical
+    localStorage.setItem("revivex_failover_ping", Date.now().toString() + "_" + Math.random().toString(36).substring(2, 6));
 
-    // 1. Instant cross-tab BroadcastChannel
+    // 1. Instant cross-tab BroadcastChannel (persistent, do not close immediately)
     try {
       const channel = getFailoverBroadcastChannel();
       channel?.postMessage(event);
-      channel?.close();
     } catch {}
 
     // 2. Same-window CustomEvent
     window.dispatchEvent(new CustomEvent("revivex_failover_event", { detail: event }));
 
-    // 3. Fallback StorageEvent
+    // 3. Fallback StorageEvent within active window
     window.dispatchEvent(
       new StorageEvent("storage", {
         key: FAILOVER_STORAGE_KEY,
@@ -248,10 +254,10 @@ export function clearActiveFailoverEvent() {
   if (typeof window === "undefined") return;
   try {
     localStorage.removeItem(FAILOVER_STORAGE_KEY);
+    localStorage.setItem("revivex_failover_ping", "CLEARED_" + Date.now().toString());
     try {
       const channel = getFailoverBroadcastChannel();
       channel?.postMessage({ type: "CLEAR" });
-      channel?.close();
     } catch {}
     window.dispatchEvent(new CustomEvent("revivex_failover_cleared"));
     window.dispatchEvent(

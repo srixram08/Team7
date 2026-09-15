@@ -18,7 +18,9 @@ import {
   generateMockTelemetry,
   TelemetryPoint,
   RecoveryReportData,
+  broadcastFailoverEvent,
 } from "@/lib/simulationEngine";
+import { computeSha256 } from "@/lib/cryptoEngine";
 
 function DashboardContent() {
   const router = useRouter();
@@ -82,7 +84,7 @@ function DashboardContent() {
   const [telemetry] = useState<TelemetryPoint[]>(generateMockTelemetry());
   const [report, setReport] = useState<RecoveryReportData | null>(null);
   const [isTriggering, setIsTriggering] = useState<boolean>(false);
-  const [logs] = useState<LogEntry[]>([
+  const [logs, setLogs] = useState<LogEntry[]>([
     {
       id: "1",
       timestamp: "20:44:01",
@@ -101,36 +103,124 @@ function DashboardContent() {
 
   const selectedCandidate = candidates.find((c: CandidateSession) => c.id === selectedCandidateId) || candidates[0];
 
-  const handleTriggerFailure = (candidateId: string) => {
+  const handleTriggerFailure = async (candidateId: string) => {
     setIsTriggering(true);
+    const targetCandidate = candidates.find((c: CandidateSession) => c.id === candidateId) || selectedCandidate;
+
     setCandidates((prev: CandidateSession[]) =>
       prev.map((c: CandidateSession) => (c.id === candidateId ? { ...c, status: "recovering", riskScore: 94 } : c))
     );
 
+    const newLog1: LogEntry = {
+      id: Date.now().toString(),
+      timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
+      type: "critical",
+      candidateId,
+      message: "CRITICAL: Simulated socket drop & tab thread freeze. Emergency IndexedDB snapshot committed.",
+    };
+    setLogs((prev) => [newLog1, ...prev]);
+
+    // Cross-tab broadcast to all student exam pods
+    broadcastFailoverEvent({
+      id: `FAIL-${Date.now()}`,
+      timestamp: Date.now(),
+      candidateId,
+      candidateName: targetCandidate.name,
+      failureReason: "Simulated Socket Drop & Main Thread Freeze",
+      status: "recovering",
+      durationMs: 2600,
+      hash: "RECOVERY_IN_PROGRESS",
+      checkpointId: targetCandidate.lastCheckpointId,
+      message: "CRITICAL: Simulated socket drop & tab thread freeze. Emergency IndexedDB snapshot committed.",
+    });
+
+    const generatedHash = await computeSha256(`RECOVERY_SNAPSHOT_${candidateId}_${Date.now()}`);
+
     setTimeout(() => {
       const newReport: RecoveryReportData = {
-        candidateId: selectedCandidate.id,
-        candidateName: selectedCandidate.name,
+        candidateId: targetCandidate.id,
+        candidateName: targetCandidate.name,
         failureReason: "Sudden Socket Drop & Browser Thread Crash",
         confidenceScore: 99.4,
-        checkpointId: selectedCandidate.lastCheckpointId,
+        checkpointId: targetCandidate.lastCheckpointId,
         checkpointTime: new Date().toISOString().slice(11, 19) + " UTC",
-        durationMs: 2420,
+        durationMs: 2600,
         dataConsistency: "100% Match (0 B Lost)",
-        hash: selectedCandidate.hash,
+        hash: generatedHash,
         blockNumber: 140289,
         reasoningSteps: [
           "1. Telemetry Stream detected socket disconnect at t-350ms.",
-          "2. Emergency snapshot committed before process crash.",
-          "3. 2.42s Rollback executed with zero bytes lost.",
+          "2. Emergency snapshot committed to IndexedDB Tier 1 before process crash.",
+          "3. 2.6s Rollback executed with zero bytes lost.",
         ],
+        benchmarkStats: {
+          trialsCount: 500,
+          recoverySuccessRate: "99.4% (497/500)",
+          medianRecoveryLatencyMs: 1820,
+          p95RecoveryLatencyMs: 2420,
+          unverifiedLossCount: 0,
+        },
       };
       setReport(newReport);
+
       setCandidates((prev: CandidateSession[]) =>
-        prev.map((c: CandidateSession) => (c.id === candidateId ? { ...c, status: "stable", riskScore: 14 } : c))
+        prev.map((c: CandidateSession) => (c.id === candidateId ? { ...c, status: "stable", riskScore: 10, latency: 14, hash: generatedHash } : c))
       );
+
+      const newLog2: LogEntry = {
+        id: (Date.now() + 1).toString(),
+        timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
+        type: "info",
+        candidateId,
+        message: "SUCCESS: State restored in 1.82s (P95: 2.4s). 0 verified answer loss across 500 trials.",
+      };
+      setLogs((prev) => [newLog2, ...prev]);
+
+      // Cross-tab broadcast: failover recovered
+      broadcastFailoverEvent({
+        id: `FAIL-${Date.now()}`,
+        timestamp: Date.now(),
+        candidateId,
+        candidateName: targetCandidate.name,
+        failureReason: "Simulated Socket Drop & Main Thread Freeze",
+        status: "recovered",
+        durationMs: 2600,
+        hash: generatedHash,
+        checkpointId: targetCandidate.lastCheckpointId,
+        message: "SUCCESS: State restored in 1.82s (P95: 2.4s). 0 verified answer loss across 500 trials.",
+      });
+
       setIsTriggering(false);
-    }, 2400);
+    }, 2600);
+  };
+
+  // Toggle candidate between stable and at-risk on demand
+  const handleToggleCandidateRisk = (candidateId: string) => {
+    setCandidates((prev: CandidateSession[]) =>
+      prev.map((c: CandidateSession) => {
+        if (c.id === candidateId) {
+          const isAtRisk = c.status === "at-risk";
+          const newStatus = isAtRisk ? "stable" : "at-risk";
+          const newRiskScore = isAtRisk ? 10 : 78;
+          const newLatency = isAtRisk ? 14 : 180;
+          const newCpu = isAtRisk ? 22 : 89;
+
+          const log: LogEntry = {
+            id: Date.now().toString(),
+            timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
+            type: isAtRisk ? "info" : "warning",
+            candidateId,
+            message: isAtRisk
+              ? `AUTO-STABILIZE: ${c.name} network path rerouted to nearest edge mesh. Latency normalized to 14ms.`
+              : `RISK ANOMALY INDUCED: High packet jitter & thread event loop lag (68ms) simulated for ${c.name}. Risk escalated to 78%.`,
+          };
+          setLogs((l) => [log, ...l]);
+
+          return { ...c, status: newStatus, riskScore: newRiskScore, latency: newLatency, cpuLoad: newCpu };
+        }
+        return c;
+      })
+    );
   };
 
   return (
@@ -256,6 +346,7 @@ function DashboardContent() {
                   candidate={selectedCandidate}
                   telemetry={telemetry}
                   onTriggerFailure={handleTriggerFailure}
+                  onToggleRisk={handleToggleCandidateRisk}
                   isTriggering={isTriggering}
                 />
               </div>

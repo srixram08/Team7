@@ -26,12 +26,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-scroll-behavior="smooth">
+    <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
-      <body className="bg-[#FFFFFF] text-[#0E1E33] antialiased selection:bg-[#00A8FF] selection:text-white">
+      <body className="bg-[#FFFFFF] text-[#0E1E33] antialiased selection:bg-[#00A8FF] selection:text-white" suppressHydrationWarning>
         {children}
       </body>
     </html>
