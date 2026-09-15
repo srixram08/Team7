@@ -168,7 +168,7 @@ function LoginContent() {
               </div>
               <div>
                 <div className="font-heading font-extrabold text-sm text-white flex items-center gap-2">
-                  <span>Exam Pod Launch Initialized</span>
+                  <span>Examee Pod Launch Initialized</span>
                   <span className="h-2 w-2 rounded-full bg-[#00A8FF] animate-ping" />
                 </div>
                 <div className="text-xs text-[#8AA4BE] mt-0.5">
