@@ -222,6 +222,20 @@ function LoginContent() {
               <span className="text-xs uppercase tracking-wider">Teacher</span>
             </button>
 
+         <button
+              type="button"
+              onClick={() => handleRoleChange("admin")}
+              className={`flex flex-col items-center gap-1.5 py-3 rounded-xl transition-all cursor-pointer ${
+                activeRole === "admin"
+                  ? "bg-[#00A8FF] text-[#07111E] font-bold shadow-md"
+                  : "text-[#8AA4BE] hover:text-white"
+              }`}
+            >
+              <Settings className="h-4 w-4" />
+              <span className="text-xs uppercase tracking-wider">Admin</span>
+            </button>
+
+  
             <button
               type="button"
               onClick={() => handleRoleChange("proctor")}
