@@ -471,6 +471,23 @@ High-visibility proctor cockpit with real-time risk triage:
 
 ---
 
+# ♾️ DevOps Lifecycle & Toolchain Mapping
+
+ReviveX bridges traditional CI/CD with **Client-Edge Autonomous Resilience**. Complete technical documentation is available in [DEVOPS_LIFECYCLE.md](DEVOPS_LIFECYCLE.md).
+
+| DevOps Phase | Tool / Engine Used | Implementation Role in ReviveX |
+| :--- | :--- | :--- |
+| **1. Plan** | **GitHub Issues, Project Boards & Specs** | Requirements roadmapping, `< 2.4s` recovery SLA, and zero-data-loss targets |
+| **2. Code** | **VS Code, TypeScript 5, React 19, Git** | Strict type safety for CRDT states and telemetry; atomic Git version control |
+| **3. Build** | **npm, Webpack, Next.js, Tailwind CSS 4** | Tree-shaking, fast module bundling, and JIT stylesheet compilation |
+| **4. Test** | **TypeScript Compiler (`tsc`), ESLint, IDE Test Runner, Chaos Engine** | Static analysis, in-browser code assertion tests, and automated fault injection |
+| **5. Release** | **GitHub (`origin/main`), Semantic Versioning** | Atomic commit history, rebased branch releases, and version tracking |
+| **6. Deploy** | **Next.js Standalone, Edge Serverless** | Production bundle optimized for high availability and low latency |
+| **7. Operate** | **Admin Failover Hub, Proctor Console, Edge NTP** | Global edge node management, live session intervention, and synchronized clocks |
+| **8. Monitor** | **100Hz Telemetry, Recharts, ML Risk Engine, SHA-256 Ledger** | Real-time candidate telemetry, waveform charts, and tamper-proof audit trails |
+
+---
+
 # 🗺️ Implementation Progression
 
 ```text
