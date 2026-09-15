@@ -179,3 +179,61 @@ export const generateMockTelemetry = (): TelemetryPoint[] => {
 
   return points;
 };
+
+export interface FailoverEvent {
+  id: string;
+  timestamp: number;
+  candidateId: string;
+  candidateName: string;
+  failureReason: string;
+  status: "recovering" | "recovered";
+  durationMs: number;
+  hash: string;
+  checkpointId: string;
+  message: string;
+}
+
+export const FAILOVER_STORAGE_KEY = "revivex_active_failover_event";
+
+export function broadcastFailoverEvent(event: FailoverEvent) {
+  if (typeof window === "undefined") return;
+  try {
+    const serialized = JSON.stringify(event);
+    localStorage.setItem(FAILOVER_STORAGE_KEY, serialized);
+    window.dispatchEvent(new CustomEvent("revivex_failover_event", { detail: event }));
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: FAILOVER_STORAGE_KEY,
+        newValue: serialized,
+      })
+    );
+  } catch (err) {
+    console.error("Failed to broadcast failover event:", err);
+  }
+}
+
+export function getActiveFailoverEvent(): FailoverEvent | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(FAILOVER_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as FailoverEvent;
+  } catch {
+    return null;
+  }
+}
+
+export function clearActiveFailoverEvent() {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(FAILOVER_STORAGE_KEY);
+    window.dispatchEvent(new CustomEvent("revivex_failover_cleared"));
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: FAILOVER_STORAGE_KEY,
+        newValue: null,
+      })
+    );
+  } catch {}
+}
+

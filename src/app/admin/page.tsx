@@ -33,6 +33,7 @@ import { DotField } from "@/components/ui/DotField";
 import { STUDENTS_DATA, getStoredExams, Exam } from "@/lib/examStore";
 import { computeSha256 } from "@/lib/cryptoEngine";
 import { getCapacityMetrics, CapacityStatus } from "@/lib/circuitBreaker";
+import { broadcastFailoverEvent } from "@/lib/simulationEngine";
 
 interface EdgeNode {
   id: string;
@@ -82,6 +83,9 @@ export default function AdminPage() {
   };
 
   const handleTriggerFailover = (nodeId: string) => {
+    const targetNode = nodes.find((n: EdgeNode) => n.id === nodeId);
+    const nodeName = targetNode?.name || nodeId;
+
     setNodes((prev: EdgeNode[]) =>
       prev.map((n: EdgeNode) => {
         if (n.id === nodeId) {
@@ -92,6 +96,36 @@ export default function AdminPage() {
       })
     );
     triggerToast(`Automated failover protocol initiated for node: ${nodeId}`);
+
+    // Broadcast regional failover event across all open student sessions
+    broadcastFailoverEvent({
+      id: `FAIL-${Date.now()}`,
+      timestamp: Date.now(),
+      candidateId: "ALL",
+      candidateName: "All Active Candidates",
+      failureReason: `Simulated Edge Node Outage: ${nodeName}`,
+      status: "recovering",
+      durationMs: 1820,
+      hash: "RECOVERY_IN_PROGRESS",
+      checkpointId: `CHK-FAILOVER-${nodeId}`,
+      message: `Node ${nodeName} entered failover. State traffic dynamically re-routed to secondary edge mirrors.`,
+    });
+
+    setTimeout(async () => {
+      const recoveryHash = await computeSha256(`NODE_FAILOVER_RESOLVED_${nodeId}_${Date.now()}`);
+      broadcastFailoverEvent({
+        id: `FAIL-${Date.now()}`,
+        timestamp: Date.now(),
+        candidateId: "ALL",
+        candidateName: "All Active Candidates",
+        failureReason: `Simulated Edge Node Outage: ${nodeName}`,
+        status: "recovered",
+        durationMs: 1820,
+        hash: recoveryHash,
+        checkpointId: `CHK-FAILOVER-${nodeId}`,
+        message: `Node ${nodeName} recovered. All candidate sessions re-synchronized with zero loss.`,
+      });
+    }, 1820);
   };
 
   const handleVerifyHash = async () => {
