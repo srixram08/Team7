@@ -16,7 +16,9 @@ import {
   Cpu,
   Wifi,
   HardDrive,
-  RotateCcw
+  RotateCcw,
+  CheckCircle2,
+  Zap
 } from "lucide-react";
 import { CandidateSession, TelemetryPoint } from "@/lib/simulationEngine";
 import { StatusRing } from "../ui/StatusRing";
@@ -25,6 +27,7 @@ interface SessionDetailPanelProps {
   candidate: CandidateSession;
   telemetry: TelemetryPoint[];
   onTriggerFailure: (candidateId: string) => void;
+  onToggleRisk?: (candidateId: string) => void;
   isTriggering: boolean;
 }
 
@@ -32,6 +35,7 @@ export const SessionDetailPanel: React.FC<SessionDetailPanelProps> = ({
   candidate,
   telemetry,
   onTriggerFailure,
+  onToggleRisk,
   isTriggering,
 }) => {
   return (
@@ -53,24 +57,57 @@ export const SessionDetailPanel: React.FC<SessionDetailPanelProps> = ({
           </p>
         </div>
 
-        {/* Trigger Simulation Button */}
-        <button
-          onClick={() => onTriggerFailure(candidate.id)}
-          disabled={isTriggering || candidate.status === "recovering"}
-          id="trigger-failure-btn"
-          className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-bold font-sans uppercase tracking-wider transition-all cursor-pointer ${
-            isTriggering || candidate.status === "recovering"
-              ? "bg-[#D97706] text-white animate-pulse"
-              : "btn-cyan !py-2.5 !px-5"
-          }`}
-        >
-          <RotateCcw className={`h-4 w-4 ${isTriggering ? "animate-spin" : ""}`} />
-          <span>
-            {isTriggering || candidate.status === "recovering"
-              ? "Recovering State (2.4s)..."
-              : "Simulate Failover Event"}
-          </span>
-        </button>
+        {/* Action Buttons: Toggle Risk vs Simulate Failover */}
+        <div className="flex flex-wrap items-center gap-2">
+          {onToggleRisk && (
+            <button
+              type="button"
+              onClick={() => onToggleRisk(candidate.id)}
+              disabled={isTriggering || candidate.status === "recovering"}
+              className={`flex items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-bold font-sans uppercase tracking-wider transition-all cursor-pointer ${
+                candidate.status === "at-risk"
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                  : "border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
+              }`}
+              title={
+                candidate.status === "at-risk"
+                  ? "Stabilize candidate connection and clear risk alert"
+                  : "Simulate network latency jitter to test AI risk detection"
+              }
+            >
+              {candidate.status === "at-risk" ? (
+                <>
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  <span>Auto-Stabilize Session</span>
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                  <span>Induce Risk Anomaly</span>
+                </>
+              )}
+            </button>
+          )}
+
+          {/* Trigger Simulation Button */}
+          <button
+            onClick={() => onTriggerFailure(candidate.id)}
+            disabled={isTriggering || candidate.status === "recovering"}
+            id="trigger-failure-btn"
+            className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-bold font-sans uppercase tracking-wider transition-all cursor-pointer ${
+              isTriggering || candidate.status === "recovering"
+                ? "bg-[#D97706] text-white animate-pulse"
+                : "btn-cyan !py-2.5 !px-5"
+            }`}
+          >
+            <RotateCcw className={`h-4 w-4 ${isTriggering ? "animate-spin" : ""}`} />
+            <span>
+              {isTriggering || candidate.status === "recovering"
+                ? "Recovering State (2.4s)..."
+                : "Simulate Failover Event"}
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* Telemetry Metrics Grid */}

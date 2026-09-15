@@ -218,6 +218,41 @@ export default function DemoPage() {
     }, 1820);
   };
 
+  // Toggle candidate between stable and at-risk on demand
+  const handleToggleCandidateRisk = (candidateId: string) => {
+    setCandidates((prev: CandidateSession[]) =>
+      prev.map((c: CandidateSession) => {
+        if (c.id === candidateId) {
+          const isAtRisk = c.status === "at-risk";
+          const newStatus = isAtRisk ? "stable" : "at-risk";
+          const newRiskScore = isAtRisk ? 10 : 78;
+          const newLatency = isAtRisk ? 14 : 180;
+          const newCpu = isAtRisk ? 22 : 89;
+
+          const logMsg: LogEntry = {
+            id: Date.now().toString(),
+            timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
+            type: isAtRisk ? "info" : "warning",
+            candidateId,
+            message: isAtRisk
+              ? `SESSION STABILIZED: Automated edge routing applied for ${c.name}. Latency lowered to 14ms, risk dropped to 10%.`
+              : `RISK ANOMALY INDUCED: High packet jitter & thread event loop lag (68ms) simulated for ${c.name}. Risk escalated to 78%.`,
+          };
+          setLogs((logs) => [logMsg, ...logs]);
+
+          return {
+            ...c,
+            status: newStatus,
+            riskScore: newRiskScore,
+            latency: newLatency,
+            cpuLoad: newCpu,
+          };
+        }
+        return c;
+      })
+    );
+  };
+
   return (
     <div className="min-h-screen bg-[#F4F8FC] text-[#0E1E33] flex flex-col font-sans">
       {/* Top Header Console */}
@@ -229,14 +264,14 @@ export default function DemoPage() {
               className="flex items-center gap-2 font-sans text-xs text-[#8AA4BE] hover:text-[#00A8FF] transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
-              <span>Back to Overview</span>
+              <span>Exit Console</span>
             </Link>
 
             <div className="h-4 w-px bg-[#1E3A5F]" />
 
             <div className="flex items-center gap-2.5">
-              <DottedLogo size={26} />
-              <h1 className="font-heading font-bold text-sm text-white truncate max-w-[200px] sm:max-w-none">
+              <DottedLogo size={28} />
+              <h1 className="font-heading font-extrabold text-sm sm:text-base tracking-wide text-white">
                 CHAOS & RESILIENCE BENCHMARK CONSOLE
               </h1>
             </div>
@@ -291,6 +326,7 @@ export default function DemoPage() {
               telemetry={telemetry}
               isTriggering={isTriggering}
               onTriggerFailure={handleTriggerFailure}
+              onToggleRisk={handleToggleCandidateRisk}
             />
           </div>
 

@@ -74,40 +74,56 @@ export const SessionGrid: React.FC<SessionGridProps> = ({
 
       {/* Candidate List Stream */}
       <div className="flex-1 space-y-2.5 overflow-y-auto pr-1">
-        {filteredCandidates.map((candidate) => {
-          const isSelected = candidate.id === selectedCandidateId;
+        {filteredCandidates.length === 0 ? (
+          <div className="p-6 text-center text-xs font-mono text-[#556B82] space-y-2 rounded-xl border border-dashed border-[#D8DFE8] bg-[#F8FAFD] my-auto">
+            <p className="font-bold text-[#0B192C]">No examinee sessions matching &quot;{filter.toUpperCase()}&quot; filter.</p>
+            <p className="text-[11px] text-[#556B82]">All candidate sessions are currently healthy with low risk scores.</p>
+            {filter !== "all" && (
+              <button
+                type="button"
+                onClick={() => setFilter("all")}
+                className="btn-cyan !py-1 !px-3 !text-[11px] mt-2 cursor-pointer"
+              >
+                View All Candidates
+              </button>
+            )}
+          </div>
+        ) : (
+          filteredCandidates.map((candidate) => {
+            const isSelected = candidate.id === selectedCandidateId;
 
-          return (
-            <div
-              key={candidate.id}
-              onClick={() => onSelectCandidate(candidate.id)}
-              className={`group relative cursor-pointer rounded-xl border p-3 font-sans transition-all duration-200 ${
-                isSelected
-                  ? "border-[#00A8FF] bg-[#E6F5FF] shadow-md ring-1 ring-[#00A8FF]"
-                  : "border-[#E1E8F0] bg-[#FAFCFE] hover:border-[#00A8FF] hover:bg-white"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-2">
-                  <StatusRing status={candidate.status} size="sm" />
-                  <span className="font-heading font-bold text-xs text-[#0B192C] group-hover:text-[#00A8FF]">
-                    {candidate.name}
-                  </span>
+            return (
+              <div
+                key={candidate.id}
+                onClick={() => onSelectCandidate(candidate.id)}
+                className={`group relative cursor-pointer rounded-xl border p-3 font-sans transition-all duration-200 ${
+                  isSelected
+                    ? "border-[#00A8FF] bg-[#E6F5FF] shadow-md ring-1 ring-[#00A8FF]"
+                    : "border-[#E1E8F0] bg-[#FAFCFE] hover:border-[#00A8FF] hover:bg-white"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <StatusRing status={candidate.status} size="sm" />
+                    <span className="font-heading font-bold text-xs text-[#0B192C] group-hover:text-[#00A8FF]">
+                      {candidate.name}
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono text-[#556B82]">{candidate.id}</span>
                 </div>
-                <span className="text-[10px] font-mono text-[#556B82]">{candidate.id}</span>
-              </div>
 
-              <div className="text-[11px] text-[#556B82] truncate mb-2">
-                {candidate.examSubject}
-              </div>
+                <div className="text-[11px] text-[#556B82] truncate mb-2">
+                  {candidate.examSubject}
+                </div>
 
-              <div className="flex items-center justify-between font-mono text-[10px] text-[#556B82] border-t border-[#E1E8F0]/60 pt-1.5">
-                <span>Latency: <strong className="text-[#00A8FF]">{candidate.latency}ms</strong></span>
-                <span>Risk: <strong className={candidate.riskScore > 60 ? "text-[#D97706]" : "text-[#00A8FF]"}>{candidate.riskScore}%</strong></span>
+                <div className="flex items-center justify-between font-mono text-[10px] text-[#556B82] border-t border-[#E1E8F0]/60 pt-1.5">
+                  <span>Latency: <strong className="text-[#00A8FF]">{candidate.latency}ms</strong></span>
+                  <span>Risk: <strong className={candidate.riskScore > 60 ? "text-[#D97706]" : "text-[#00A8FF]"}>{candidate.riskScore}%</strong></span>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
     </div>
   );
